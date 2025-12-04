@@ -5,7 +5,8 @@ from .models import Restaurant, Dish, Category
 import requests
 
 def index(request):
-    return render(request, 'index.html')
+    restaurants = Restaurant.objects.all()
+    return render(request, 'index.html', {"restaurants": restaurants})
 
 def login(request):
     return render(request, 'login.html')
