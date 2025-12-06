@@ -1,5 +1,55 @@
 from django.db import models
 from django.utils.text import slugify
+from django.contrib.auth.models import User
+from django.utils import timezone
+from datetime import timedelta
+import secrets
+
+
+class Token(models.Model):
+    """
+    Token para autorizar abertura de novos restaurantes.
+    Cada token permite criar 1 restaurante.
+    """
+    code = models.CharField(max_length=32, unique=True, editable=False)
+    is_used = models.BooleanField(default=False, verbose_name="Já foi usado?")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Criado em")
+    expires_at = models.DateTimeField(verbose_name="Expira em")
+    used_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name="tokens_used",
+        verbose_name="Usado por"
+    )
+    used_at = models.DateTimeField(null=True, blank=True, verbose_name="Usado em")
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Token"
+        verbose_name_plural = "Tokens"
+
+    def __str__(self):
+        status = "Usado" if self.is_used else "Disponível"
+        return f"{self.code} - {status}"
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            # Gera código único de 32 caracteres
+            self.code = secrets.token_urlsafe(24)[:32].upper()
+        if not self.expires_at:
+            # Expira em 30 dias por padrão
+            self.expires_at = timezone.now() + timedelta(days=30)
+        super().save(*args, **kwargs)
+
+    def is_valid(self):
+        """Verifica se o token pode ser usado"""
+        if self.is_used:
+            return False, "Token já foi utilizado"
+        if timezone.now() > self.expires_at:
+            return False, "Token expirado"
+        return True, "Token válido"
 
 
 class Restaurant(models.Model):
