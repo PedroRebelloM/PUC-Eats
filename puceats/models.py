@@ -7,10 +7,6 @@ import secrets
 
 
 class Token(models.Model):
-    """
-    Token para autorizar abertura de novos restaurantes.
-    Cada token permite criar 1 restaurante.
-    """
     code = models.CharField(max_length=32, unique=True, editable=False)
     is_used = models.BooleanField(default=False, verbose_name="Já foi usado?")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Criado em")
@@ -36,10 +32,8 @@ class Token(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.code:
-            # Gera código único de 32 caracteres
             self.code = secrets.token_urlsafe(24)[:32].upper()
         if not self.expires_at:
-            # Expira em 30 dias por padrão
             self.expires_at = timezone.now() + timedelta(days=30)
         super().save(*args, **kwargs)
 
@@ -65,6 +59,21 @@ class Restaurant(models.Model):
         ("outros", "Outros"),
     ]
 
+    ESTABLISHMENT_TYPES = [
+        ("restaurante", "Restaurante"),
+        ("lanchonete", "Lanchonete"),
+        ("barraca", "Barraca"),
+    ]
+
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="restaurants",
+        null=True,
+        blank=True,
+        verbose_name="Proprietário"
+    )
+
     name = models.CharField(max_length=120, unique=True)
     slug = models.SlugField(unique=True, blank=True)
 
@@ -72,6 +81,12 @@ class Restaurant(models.Model):
 
     description = models.TextField(blank=True, help_text="Descrição curta do restaurante")
     cuisine_type = models.CharField(max_length=30, choices=CUISINE_TYPES, default="outros")
+    establishment_type = models.CharField(
+        max_length=20,
+        choices=ESTABLISHMENT_TYPES,
+        default="restaurante",
+        verbose_name="Tipo de Estabelecimento"
+    )
 
     # Localização no campus
     latitude = models.FloatField(blank=True, null=True)
@@ -88,7 +103,6 @@ class Restaurant(models.Model):
     instagram = models.URLField(blank=True)
     website = models.URLField(blank=True)
 
-    # Faixa de preço média (boa prática para apps de cardápio)
     price_level = models.PositiveSmallIntegerField(
         default=1,
         help_text="1–5 (quanto mais alto, mais caro)"
