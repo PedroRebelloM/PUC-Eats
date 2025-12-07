@@ -109,7 +109,6 @@
   </div>
 
   <script>
-    // Sistema de Toast Notifications
     function showToast(message, type = 'success') {
       const container = document.getElementById('toast-container');
       
@@ -145,7 +144,6 @@
       }, 300);
     }
     
-    // Exibe mensagens do Django
     document.addEventListener('DOMContentLoaded', function() {
       const messagesData = document.querySelector('.messages-data');
       if (messagesData) {
@@ -153,7 +151,7 @@
         messages.forEach((msg, index) => {
           setTimeout(() => {
             showToast(msg.dataset.message, msg.dataset.type);
-          }, index * 150); // Pequeno delay entre múltiplas mensagens
+          }, index * 150);
         });
       }
     });

@@ -324,3 +324,35 @@ def exemplo_consumir_api(request):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
 
+@login_required(login_url='/puceats/login/')
+def admin_panel(request):
+    """View do painel administrativo - apenas para staff/superuser"""
+    if not request.user.is_staff and not request.user.is_superuser:
+        messages.error(request, '❌ Acesso negado. Apenas administradores podem acessar esta área.')
+        return redirect('puceats:index')
+    
+    # Estatísticas gerais
+    total_users = User.objects.count()
+    total_restaurants = Restaurant.objects.count()
+    total_dishes = Dish.objects.count()
+    total_tokens = Token.objects.count()
+    tokens_used = Token.objects.filter(is_used=True).count()
+    tokens_available = total_tokens - tokens_used
+    
+    # Dados detalhados
+    users = User.objects.all().order_by('-date_joined')
+    restaurants = Restaurant.objects.all().select_related('owner').order_by('-id')
+    
+    context = {
+        'total_users': total_users,
+        'total_restaurants': total_restaurants,
+        'total_dishes': total_dishes,
+        'total_tokens': total_tokens,
+        'tokens_used': tokens_used,
+        'tokens_available': tokens_available,
+        'users': users,
+        'restaurants': restaurants,
+    }
+    
+    return render(request, 'admin.html', context)
+
