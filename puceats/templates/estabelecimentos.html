@@ -1,0 +1,170 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} - PUC Eats</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/establishments.css' %}">
+</head>
+<body>
+    <aside class="menu-sidebar" id="menuSidebar">
+        <header class="menu-header">
+            <h1 class="brand">PUC <span>Eats</span></h1>
+        </header>
+
+        <nav class="nav">
+            <a href="{% url 'puceats:index' %}" class="item">
+                <span class="material-icons">home</span>
+                <span>Tela Inicial</span>
+            </a>
+            <a href="{% url 'puceats:restaurantes' %}" class="item {% if establishment_type == 'restaurante' %}active{% endif %}">
+                <span class="material-icons">restaurant</span>
+                <span>Restaurantes</span>
+            </a>
+            <a href="{% url 'puceats:lanchonetes' %}" class="item {% if establishment_type == 'lanchonete' %}active{% endif %}">
+                <span class="material-icons">lunch_dining</span>
+                <span>Lanchonetes</span>
+            </a>
+            <a href="{% url 'puceats:barracas' %}" class="item {% if establishment_type == 'barraca' %}active{% endif %}">
+                <span class="material-icons">storefront</span>
+                <span>Barracas</span>
+            </a>
+            <a href="{% url 'puceats:favoritos' %}" class="item">
+                <span class="material-icons">favorite_border</span>
+                <span>Favoritos</span>
+            </a>
+        </nav>
+
+        <footer class="menu-footer">
+            <a href="{% url 'puceats:login' %}" class="item">
+                <span class="material-icons">store</span>
+                <span>Conta Restaurante</span>
+            </a>
+            <a href="#" class="item">
+                <span class="material-icons">settings</span>
+                <span>Configurações</span>
+            </a>
+        </footer>
+    </aside>
+    
+    <div class="overlay" id="overlay"></div>
+    
+    <header class="modern-header">
+        <div class="header-container">
+            <div class="header-left">
+                <div class="logo-wrapper">
+                    <div class="logo-icon">
+                        <span class="material-icons">place</span>
+                    </div>
+                    <h1 class="logo-text">PUC <span class="logo-accent">Eats</span></h1>
+                </div>
+            </div>
+
+            <div class="header-center">
+                <div class="search-wrapper">
+                    <span class="material-icons search-icon-left">search</span>
+                    <input type="text" class="search-input" placeholder="Buscar {{ page_title|lower }}...">
+                </div>
+            </div>
+
+            <div class="header-right">
+                <button class="icon-btn search-mobile-btn" id="searchMobileToggle">
+                    <span class="material-icons">search</span>
+                </button>
+                <button class="icon-btn" id="menuToggle">
+                    <span class="material-icons">menu</span>
+                </button>
+                <button class="icon-btn" id="sidebarToggle">
+                    <span class="material-icons">chevron_left</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="search-mobile" id="searchMobile">
+            <div class="search-wrapper">
+                <span class="material-icons search-icon-left">search</span>
+                <input type="text" class="search-input" placeholder="Buscar {{ page_title|lower }}...">
+            </div>
+        </div>
+    </header>
+    
+    <div class="main-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="header-title-group">
+                    <span class="material-icons header-icon">{{ icon }}</span>
+                    <h2>{{ page_title }}</h2>
+                </div>
+                <p class="sidebar-subtitle">{{ restaurants|length }} estabelecimento{{ restaurants|length|pluralize }} encontrado{{ restaurants|length|pluralize }}</p>
+            </div>
+            
+            <div class="restaurant-list">
+                {% for restaurant in restaurants %}
+                <div class="restaurant-card">
+                    <div class="restaurant-image">
+                        <span class="material-icons restaurant-icon">{{ icon }}</span>
+                    </div>
+                    <div class="restaurant-info">
+                        <h3 class="restaurant-name">{{ restaurant.name }}</h3>
+                        <p class="restaurant-type">{{ restaurant.get_establishment_type_display }}</p>
+                        <div class="restaurant-meta">
+                            <span class="material-icons meta-icon">lunch_dining</span>
+                            <span class="meta-text">{{ restaurant.dishes.count }} prato{{ restaurant.dishes.count|pluralize }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="empty-state">
+                    <span class="material-icons empty-icon">{{ icon }}</span>
+                    <p class="empty-message">Nenhum estabelecimento encontrado</p>
+                    <p class="empty-hint">Não há {{ page_title|lower }} cadastrados no momento</p>
+                </div>
+                {% endfor %}
+            </div>
+        </aside>
+
+        <div id="map"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="{% static 'js/script.js' %}"></script>
+    <script>
+        const menuToggle = document.getElementById('menuToggle');
+        const menuSidebar = document.getElementById('menuSidebar');
+        const overlay = document.getElementById('overlay');
+
+        menuToggle.addEventListener('click', function() {
+            menuSidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        });
+
+        overlay.addEventListener('click', function() {
+            menuSidebar.classList.remove('active');
+            overlay.classList.remove('active');
+        });
+
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebar = document.querySelector('.sidebar');
+
+        sidebarToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('hidden');
+            sidebarToggle.classList.toggle('active');
+        });
+
+        const searchMobileToggle = document.getElementById('searchMobileToggle');
+        const searchMobile = document.getElementById('searchMobile');
+
+        searchMobileToggle.addEventListener('click', function() {
+            if (searchMobile.style.display === 'none' || searchMobile.style.display === '') {
+                searchMobile.style.display = 'block';
+            } else {
+                searchMobile.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

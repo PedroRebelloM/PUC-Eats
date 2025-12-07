@@ -21,7 +21,6 @@ def index(request):
     return render(request, 'index.html', context)
 
 def restaurantes_view(request):
-    """View para exibir apenas restaurantes"""
     restaurantes = Restaurant.objects.filter(establishment_type='restaurante').prefetch_related('dishes')
     
     context = {
@@ -30,10 +29,9 @@ def restaurantes_view(request):
         'establishment_type': 'restaurante',
         'icon': 'restaurant',
     }
-    return render(request, 'establishments.html', context)
+    return render(request, 'estabelecimentos.html', context)
 
 def lanchonetes_view(request):
-    """View para exibir apenas lanchonetes"""
     lanchonetes = Restaurant.objects.filter(establishment_type='lanchonete').prefetch_related('dishes')
     
     context = {
@@ -42,10 +40,9 @@ def lanchonetes_view(request):
         'establishment_type': 'lanchonete',
         'icon': 'lunch_dining',
     }
-    return render(request, 'establishments.html', context)
+    return render(request, 'estabelecimentos.html', context)
 
 def barracas_view(request):
-    """View para exibir apenas barracas"""
     barracas = Restaurant.objects.filter(establishment_type='barraca').prefetch_related('dishes')
     
     context = {
@@ -54,7 +51,7 @@ def barracas_view(request):
         'establishment_type': 'barraca',
         'icon': 'storefront',
     }
-    return render(request, 'establishments.html', context)
+    return render(request, 'estabelecimentos.html', context)
 
 def login(request):
     # Se já está logado, faz logout primeiro para evitar sessões antigas
