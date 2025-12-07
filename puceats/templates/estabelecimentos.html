@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    <link rel="stylesheet" href="{% static 'css/establishments.css' %}">
+    <link rel="stylesheet" href="{% static 'css/estabelecimentos.css' %}">
 </head>
 <body>
     <aside class="menu-sidebar" id="menuSidebar">
@@ -92,43 +92,45 @@
         </div>
     </header>
     
-    <div class="main-container">
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="header-title-group">
-                    <span class="material-icons header-icon">{{ icon }}</span>
-                    <h2>{{ page_title }}</h2>
-                </div>
-                <p class="sidebar-subtitle">{{ restaurants|length }} estabelecimento{{ restaurants|length|pluralize }} encontrado{{ restaurants|length|pluralize }}</p>
+    <main class="page-content">
+        <div class="page-header">
+            <div class="header-icon-wrapper">
+                <span class="material-icons">{{ icon }}</span>
             </div>
-            
-            <div class="restaurant-list">
-                {% for restaurant in restaurants %}
-                <div class="restaurant-card">
-                    <div class="restaurant-image">
-                        <span class="material-icons restaurant-icon">{{ icon }}</span>
-                    </div>
-                    <div class="restaurant-info">
-                        <h3 class="restaurant-name">{{ restaurant.name }}</h3>
-                        <p class="restaurant-type">{{ restaurant.get_establishment_type_display }}</p>
-                        <div class="restaurant-meta">
-                            <span class="material-icons meta-icon">lunch_dining</span>
-                            <span class="meta-text">{{ restaurant.dishes.count }} prato{{ restaurant.dishes.count|pluralize }}</span>
-                        </div>
-                    </div>
-                </div>
-                {% empty %}
-                <div class="empty-state">
-                    <span class="material-icons empty-icon">{{ icon }}</span>
-                    <p class="empty-message">Nenhum estabelecimento encontrado</p>
-                    <p class="empty-hint">Não há {{ page_title|lower }} cadastrados no momento</p>
-                </div>
-                {% endfor %}
+            <div>
+                <h2 class="page-title">{{ page_title }}</h2>
+                <p class="page-description">{{ restaurants|length }} estabelecimento{{ restaurants|length|pluralize }} encontrado{{ restaurants|length|pluralize }}</p>
             </div>
-        </aside>
+        </div>
 
-        <div id="map"></div>
-    </div>
+        <section class="establishments-grid">
+            {% for restaurant in restaurants %}
+            <article class="establishment-card">
+                <div class="card-image">
+                    <div class="image-placeholder">
+                        <span class="material-icons placeholder-icon">{{ icon }}</span>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ restaurant.name }}</h3>
+                    </div>
+                    <p class="card-category">{{ restaurant.get_establishment_type_display }}</p>
+                    <div class="card-meta">
+                        <span class="material-icons meta-icon">lunch_dining</span>
+                        <span class="meta-text">{{ restaurant.dishes.count }} prato{{ restaurant.dishes.count|pluralize }}</span>
+                    </div>
+                </div>
+            </article>
+            {% empty %}
+            <div class="empty-state-full">
+                <span class="material-icons empty-icon">{{ icon }}</span>
+                <p class="empty-message">Nenhum estabelecimento encontrado</p>
+                <p class="empty-hint">Não há {{ page_title|lower }} cadastrados no momento</p>
+            </div>
+            {% endfor %}
+        </section>
+    </main>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="{% static 'js/script.js' %}"></script>
