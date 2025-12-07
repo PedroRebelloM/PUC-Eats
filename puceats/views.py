@@ -326,8 +326,8 @@ def exemplo_consumir_api(request):
 
 @login_required(login_url='/puceats/login/')
 def admin_panel(request):
-    """View do painel administrativo - apenas para staff/superuser"""
-    if not request.user.is_staff and not request.user.is_superuser:
+    """View do painel administrativo - apenas para superuser"""
+    if not request.user.is_superuser:
         messages.error(request, '❌ Acesso negado. Apenas administradores podem acessar esta área.')
         return redirect('puceats:index')
     
@@ -341,7 +341,7 @@ def admin_panel(request):
     
     # Dados detalhados
     users = User.objects.all().order_by('-date_joined')
-    restaurants = Restaurant.objects.all().select_related('owner').order_by('-id')
+    restaurants = Restaurant.objects.all().select_related('owner').prefetch_related('dishes').order_by('-id')
     
     context = {
         'total_users': total_users,

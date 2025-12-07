@@ -54,9 +54,7 @@
     </header>
 
     <main class="container py-4">
-        <!-- Cards de Estatísticas -->
         <div class="row g-4 mb-5">
-            <!-- Card Usuários -->
             <div class="col-12 col-sm-6 col-lg-3">
                 <div class="stat-card">
                     <div class="stat-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
@@ -70,7 +68,6 @@
                 </div>
             </div>
 
-            <!-- Card Restaurantes -->
             <div class="col-12 col-sm-6 col-lg-3">
                 <div class="stat-card">
                     <div class="stat-icon" style="background: linear-gradient(135deg, #9CCC65 0%, #8BC34A 100%);">
@@ -84,7 +81,6 @@
                 </div>
             </div>
 
-            <!-- Card Pratos -->
             <div class="col-12 col-sm-6 col-lg-3">
                 <div class="stat-card">
                     <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
@@ -93,12 +89,11 @@
                     <div class="stat-content">
                         <p class="stat-label">Pratos</p>
                         <h3 class="stat-value">{{ total_dishes }}</h3>
-                        <p class="stat-description">No cardápio</p>
+                        <p class="stat-description">Pratos cadastrados</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Card Tokens -->
             <div class="col-12 col-sm-6 col-lg-3">
                 <div class="stat-card">
                     <div class="stat-icon" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
@@ -110,6 +105,185 @@
                         <p class="stat-description">{{ tokens_used }} usados de {{ total_tokens }}</p>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Tabela de Usuários -->
+        <div class="section-card mb-4">
+            <div class="section-header">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="section-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
+                        <span class="material-icons">people</span>
+                    </div>
+                    <div>
+                        <h2 class="section-title">Usuários Cadastrados</h2>
+                        <p class="section-subtitle">Lista completa de todos os usuários da plataforma</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nome</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Tipo</th>
+                            <th>Data de Cadastro</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td><span class="badge-id">{{ user.id }}</span></td>
+                            <td>
+                                <div class="user-info">
+                                    <div class="user-avatar">
+                                        <span class="material-icons">person</span>
+                                    </div>
+                                    <span class="user-name">{{ user.first_name|default:"—" }}</span>
+                                </div>
+                            </td>
+                            <td><span class="text-muted">{{ user.username }}</span></td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                {% if user.is_superuser %}
+                                <span class="badge-type badge-superuser">
+                                    <span class="material-icons">admin_panel_settings</span>
+                                    Administrador
+                                </span>
+                                {% else %}
+                                <span class="badge-type badge-user">
+                                    <span class="material-icons">person</span>
+                                    Usuário
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.date_joined|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                {% if user.is_active %}
+                                <span class="badge-status badge-active">
+                                    <span class="status-dot"></span>
+                                    Ativo
+                                </span>
+                                {% else %}
+                                <span class="badge-status badge-inactive">
+                                    <span class="status-dot"></span>
+                                    Inativo
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5">
+                                <span class="material-icons text-muted mb-2" style="font-size: 48px;">people_outline</span>
+                                <p class="text-muted">Nenhum usuário cadastrado</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tabela de Restaurantes -->
+        <div class="section-card">
+            <div class="section-header">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="section-icon" style="background: linear-gradient(135deg, #9CCC65 0%, #8BC34A 100%);">
+                        <span class="material-icons">restaurant</span>
+                    </div>
+                    <div>
+                        <h2 class="section-title">Restaurantes Cadastrados</h2>
+                        <p class="section-subtitle">Lista completa de todos os estabelecimentos da plataforma</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Restaurante</th>
+                            <th>Proprietário</th>
+                            <th>Tipo</th>
+                            <th>Pratos</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for restaurant in restaurants %}
+                        <tr>
+                            <td><span class="badge-id">{{ restaurant.id }}</span></td>
+                            <td>
+                                <div class="restaurant-info">
+                                    <div class="restaurant-icon">
+                                        <span class="material-icons">
+                                            {% if restaurant.establishment_type == 'restaurante' %}
+                                            restaurant
+                                            {% elif restaurant.establishment_type == 'lanchonete' %}
+                                            lunch_dining
+                                            {% elif restaurant.establishment_type == 'barraca' %}
+                                            storefront
+                                            {% else %}
+                                            restaurant_menu
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    <span class="restaurant-name">{{ restaurant.name }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="owner-info">
+                                    <span class="material-icons" style="font-size: 16px; color: #9ca3af;">person</span>
+                                    <span>{{ restaurant.owner.first_name|default:restaurant.owner.username }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                {% if restaurant.establishment_type == 'restaurante' %}
+                                <span class="badge-establishment badge-restaurant">
+                                    <span class="material-icons">restaurant</span>
+                                    Restaurante
+                                </span>
+                                {% elif restaurant.establishment_type == 'lanchonete' %}
+                                <span class="badge-establishment badge-lanchonete">
+                                    <span class="material-icons">lunch_dining</span>
+                                    Lanchonete
+                                </span>
+                                {% elif restaurant.establishment_type == 'barraca' %}
+                                <span class="badge-establishment badge-barraca">
+                                    <span class="material-icons">storefront</span>
+                                    Barraca
+                                </span>
+                                {% else %}
+                                <span class="badge-establishment badge-other">
+                                    <span class="material-icons">restaurant_menu</span>
+                                    Outro
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="dishes-count">
+                                    <span class="material-icons" style="font-size: 18px; color: #f59e0b;">lunch_dining</span>
+                                    <span class="count-number">{{ restaurant.dishes.count }}</span>
+                                    <span class="count-label">prato{{ restaurant.dishes.count|pluralize }}</span>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5">
+                                <span class="material-icons text-muted mb-2" style="font-size: 48px;">restaurant_menu</span>
+                                <p class="text-muted">Nenhum restaurante cadastrado</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </main>
