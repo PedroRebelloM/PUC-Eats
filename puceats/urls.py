@@ -5,6 +5,9 @@ app_name = 'puceats'
 
 urlpatterns = [
     path('', views.index, name='index'),
+    path('restaurantes/', views.restaurantes_view, name='restaurantes'),
+    path('lanchonetes/', views.lanchonetes_view, name='lanchonetes'),
+    path('barracas/', views.barracas_view, name='barracas'),
     path('login/', views.login, name='login'),
     path('logout/', views.logout, name='logout'),
     path('cadastro/', views.cadastro, name='cadastro'),
