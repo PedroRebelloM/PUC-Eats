@@ -154,4 +154,109 @@
       return false;
     };
   }
+
+  // Filtros de busca e categoria
+  const searchInput = document.getElementById('searchInput');
+  const categoryFilter = document.getElementById('categoryFilter');
+  const dishItems = document.querySelectorAll('.dish-item');
+
+  function filterDishes() {
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+    const selectedCategory = categoryFilter ? categoryFilter.value : '';
+
+    dishItems.forEach(item => {
+      const dishName = item.getAttribute('data-name') || '';
+      const dishCategory = item.getAttribute('data-category') || '';
+      
+      const matchesSearch = dishName.includes(searchTerm);
+      const matchesCategory = !selectedCategory || dishCategory === selectedCategory;
+      
+      if (matchesSearch && matchesCategory) {
+        item.style.display = '';
+      } else {
+        item.style.display = 'none';
+      }
+    });
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener('input', filterDishes);
+  }
+
+  if (categoryFilter) {
+    categoryFilter.addEventListener('change', filterDishes);
+  }
+
+  // Botões de deletar
+  document.querySelectorAll('.btn-outline-danger[data-dish-id]').forEach(btn => {
+    btn.addEventListener('click', async function(e) {
+      e.preventDefault();
+      
+      const dishId = this.getAttribute('data-dish-id');
+      const dishName = this.closest('.card').querySelector('.card-title').textContent;
+      
+      if (!confirm(`Tem certeza que deseja apagar "${dishName}"?`)) {
+        return;
+      }
+      
+      try {
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const response = await fetch(`/puceats/dish/${dishId}/delete/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': csrftoken,
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          window.location.reload();
+        } else {
+          alert('Erro ao deletar: ' + (result.error || 'Erro desconhecido'));
+        }
+      } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao deletar o prato');
+      }
+    });
+  });
+
+  // Botões de editar
+  document.querySelectorAll('.btnEditar[data-dish-id]').forEach(btn => {
+    btn.addEventListener('click', async function(e) {
+      e.preventDefault();
+      
+      const dishId = this.getAttribute('data-dish-id');
+      
+      try {
+        const response = await fetch(`/puceats/dish/${dishId}/get/`);
+        const result = await response.json();
+        
+        if (result.success) {
+          const dish = result.dish;
+          
+          // Preenche o formulário
+          document.getElementById('campoRestaurante').value = dish.restaurant_id;
+          document.getElementById('campoNome').value = dish.name;
+          document.getElementById('campoDescricao').value = dish.description;
+          document.getElementById('campoCategoria').value = dish.category;
+          document.getElementById('campoPreco').value = dish.price;
+          
+          // Armazena o ID do prato para atualizar ao invés de criar
+          form.setAttribute('data-dish-id', dishId);
+          
+          // Abre o modal
+          const modal = document.querySelector('#adicionarModal');
+          openModal(modal);
+        } else {
+          alert('Erro ao carregar prato: ' + (result.error || 'Erro desconhecido'));
+        }
+      } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao carregar o prato');
+      }
+    });
+  });
 })();

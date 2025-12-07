@@ -46,121 +46,108 @@
 
         <div class="container py-4 py-md-5">
 
-            <div class="card shadow-sm">
-                <div class="card-body">
+            <div class="card shadow-sm mb-4 border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: linear-gradient(135deg, #9CCC65 0%, #8BC34A 100%); border-radius: 12px;">
+                            <span class="material-icons text-white">restaurant</span>
+                        </div>
+                        <div>
+                            <h2 class="h5 mb-0 fw-bold" style="color: #1f2937;">Meus Restaurantes</h2>
+                            <p class="small text-muted mb-0">Selecione para gerenciar o cardápio</p>
+                        </div>
+                    </div>
+                    <select class="form-select form-select-lg border-2" id="restaurantSelector" onchange="window.location.href='?restaurant_id='+this.value" style="border-color: #e5e7eb; border-radius: 12px; padding: 12px 16px;">
+                        {% for restaurant in restaurants %}
+                        <option value="{{ restaurant.id }}" {% if selected_restaurant.id == restaurant.id %}selected{% endif %}>
+                            {{ restaurant.name }} | {{ restaurant.get_establishment_type_display }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            {% if selected_restaurant %}
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h2 class="h5 mb-1 fw-bold" style="color: #1f2937;">Cardápio de {{ selected_restaurant.name }}</h2>
+                            <p class="small text-muted mb-0">{{ selected_restaurant.get_establishment_type_display }}</p>
+                        </div>
+                        <span class="badge" style="background: linear-gradient(135deg, #9CCC65 0%, #8BC34A 100%); font-size: 14px; padding: 8px 16px; border-radius: 20px;">{{ dishes|length }} prato{{ dishes|length|pluralize }}</span>
+                    </div>
                     
                     <div class="row g-3 mb-4">
                         <div class="col-12 col-md">
                             <div class="input-group">
                                 <span class="input-group-text bg-white"><span class="material-icons">search</span></span>
-                                <input type="text" class="form-control" placeholder="Pesquisar prato" />
+                                <input type="text" class="form-control" placeholder="Pesquisar prato" id="searchInput" />
                             </div>
                         </div>
                         <div class="col-12 col-md-auto">
-                            <select class="form-select">
-                                <option>Todas as categorias</option>
-                                <option>Burguer Steak</option>
-                                <option>Vegeterian</option>
-                                <option>Brazilian</option>
+                            <select class="form-select" id="categoryFilter">
+                                <option value="">Todas as categorias</option>
+                                {% for dish in dishes %}
+                                    {% if dish.category %}
+                                    <option value="{{ dish.category.name }}">{{ dish.category.name }}</option>
+                                    {% endif %}
+                                {% endfor %}
                             </select>
                         </div>
                     </div>
 
-                    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
-                        <div class="col">
+                    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4" id="dishesContainer">
+                        {% for dish in dishes %}
+                        <div class="col dish-item" data-category="{{ dish.category.name|default:'' }}" data-name="{{ dish.name|lower }}">
                             <div class="card h-100 hoverTransform overflow-hidden position-relative">
-                                <img class="card-img-top" alt="Hamburguer Obelix" src="https://www.foodandwine.com/thmb/XE8ubzwObCIgMw7qJ9CsqUZocNM=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/MSG-Smash-Burger-FT-RECIPE0124-d9682401f3554ef683e24311abdf342b.jpg" />
-                                <span class="badge text-bg-dark badgeOverlay">Burguer Steak</span>
+                                {% if dish.image %}
+                                <img class="card-img-top" alt="{{ dish.name }}" src="{{ dish.image.url }}" />
+                                {% else %}
+                                <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 200px;">
+                                    <span class="material-icons text-white" style="font-size: 64px;">restaurant</span>
+                                </div>
+                                {% endif %}
+                                {% if dish.category %}
+                                <span class="badge text-bg-dark badgeOverlay">{{ dish.category.name }}</span>
+                                {% endif %}
                                 <div class="card-body">
-                                    <h3 class="h5 card-title">Obelix</h3>
-                                    <p class="card-text text-secondary small">Burger de Picanha 180g, bacon, queijo, alface, tomate, pão brioche e molho dijonnese trufado.</p>
+                                    <h3 class="h5 card-title">{{ dish.name }}</h3>
+                                    <p class="card-text text-secondary small">{{ dish.description|truncatewords:20 }}</p>
+                                    <p class="fw-bold text-success mb-2">R$ {{ dish.price }}</p>
                                     <div class="d-flex justify-content-end gap-2">
-                                        <a class="btn btn-sm btnEditar d-inline-flex align-items-center" href="#"><span class="material-icons me-1" style="font-size: 1rem;">edit</span>Editar</a>
-                                        <a class="btn btn-sm btn-outline-danger d-inline-flex align-items-center" href="#"><span class="material-icons me-1" style="font-size: 1rem;">delete</span>Apagar</a>
+                                        <a class="btn btn-sm btnEditar d-inline-flex align-items-center" href="#" data-dish-id="{{ dish.id }}">
+                                            <span class="material-icons me-1" style="font-size: 1rem;">edit</span>Editar
+                                        </a>
+                                        <a class="btn btn-sm btn-outline-danger d-inline-flex align-items-center" href="#" data-dish-id="{{ dish.id }}">
+                                            <span class="material-icons me-1" style="font-size: 1rem;">delete</span>Apagar
+                                        </a>
                                     </div>
                                 </div>
                             </div>
                         </div>
-
-                        <div class="col">
-                            <div class="card h-100 hoverTransform overflow-hidden position-relative">
-                                <img class="card-img-top" alt="Hamburguer Obelix" src="https://www.foodandwine.com/thmb/XE8ubzwObCIgMw7qJ9CsqUZocNM=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/MSG-Smash-Burger-FT-RECIPE0124-d9682401f3554ef683e24311abdf342b.jpg" />
-                                <span class="badge text-bg-dark badgeOverlay">Burguer Steak</span>
-                                <div class="card-body">
-                                    <h3 class="h5 card-title">Obelix</h3>
-                                    <p class="card-text text-secondary small">Burger de Picanha 180g, bacon, queijo, alface, tomate, pão brioche e molho dijonnese trufado.</p>
-                                    <div class="d-flex justify-content-end gap-2">
-                                        <a class="btn btn-sm btnEditar d-inline-flex align-items-center" href="#"><span class="material-icons me-1" style="font-size: 1rem;">edit</span>Editar</a>
-                                        <a class="btn btn-sm btn-outline-danger d-inline-flex align-items-center" href="#"><span class="material-icons me-1" style="font-size: 1rem;">delete</span>Apagar</a>
-                                    </div>
-                                </div>
-                            </div>
+                        {% empty %}
+                        <div class="col-12 text-center py-5">
+                            <span class="material-icons text-muted mb-3" style="font-size: 64px;">restaurant_menu</span>
+                            <p class="text-muted">Nenhum prato cadastrado neste restaurante ainda.</p>
+                            <p class="text-muted small">Clique no botão "Adicionar" para criar o primeiro prato!</p>
                         </div>
-
-                        <div class="col">
-                            <div class="card h-100 hoverTransform overflow-hidden position-relative">
-                                <img class="card-img-top" alt="Hamburguer Obelix" src="https://www.foodandwine.com/thmb/XE8ubzwObCIgMw7qJ9CsqUZocNM=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/MSG-Smash-Burger-FT-RECIPE0124-d9682401f3554ef683e24311abdf342b.jpg" />
-                                <span class="badge text-bg-dark badgeOverlay">Burguer Steak</span>
-                                <div class="card-body">
-                                    <h3 class="h5 card-title">Obelix</h3>
-                                    <p class="card-text text-secondary small">Burger de Picanha 180g, bacon, queijo, alface, tomate, pão brioche e molho dijonnese trufado.</p>
-                                    <div class="d-flex justify-content-end gap-2">
-                                        <a class="btn btn-sm btnEditar d-inline-flex align-items-center" href="#"><span class="material-icons me-1" style="font-size: 1rem;">edit</span>Editar</a>
-                                        <a class="btn btn-sm btn-outline-danger d-inline-flex align-items-center" href="#"><span class="material-icons me-1" style="font-size: 1rem;">delete</span>Apagar</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col">
-                            <div class="card h-100 hoverTransform overflow-hidden position-relative">
-                                <img class="card-img-top" alt="Hamburguer Obelix" src="https://www.foodandwine.com/thmb/XE8ubzwObCIgMw7qJ9CsqUZocNM=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/MSG-Smash-Burger-FT-RECIPE0124-d9682401f3554ef683e24311abdf342b.jpg" />
-                                <span class="badge text-bg-dark badgeOverlay">Burguer Steak</span>
-                                <div class="card-body">
-                                    <h3 class="h5 card-title">Obelix</h3>
-                                    <p class="card-text text-secondary small">Burger de Picanha 180g, bacon, queijo, alface, tomate, pão brioche e molho dijonnese trufado.</p>
-                                    <div class="d-flex justify-content-end gap-2">
-                                        <a class="btn btn-sm btnEditar d-inline-flex align-items-center" href="#"><span class="material-icons me-1" style="font-size: 1rem;">edit</span>Editar</a>
-                                        <a class="btn btn-sm btn-outline-danger d-inline-flex align-items-center" href="#"><span class="material-icons me-1" style="font-size: 1rem;">delete</span>Apagar</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col">
-                            <div class="card h-100 hoverTransform overflow-hidden position-relative">
-                                <img class="card-img-top" alt="Hamburguer Obelix" src="https://www.foodandwine.com/thmb/XE8ubzwObCIgMw7qJ9CsqUZocNM=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/MSG-Smash-Burger-FT-RECIPE0124-d9682401f3554ef683e24311abdf342b.jpg" />
-                                <span class="badge text-bg-dark badgeOverlay">Burguer Steak</span>
-                                <div class="card-body">
-                                    <h3 class="h5 card-title">Obelix</h3>
-                                    <p class="card-text text-secondary small">Burger de Picanha 180g, bacon, queijo, alface, tomate, pão brioche e molho dijonnese trufado.</p>
-                                    <div class="d-flex justify-content-end gap-2">
-                                        <a class="btn btn-sm btnEditar d-inline-flex align-items-center" href="#"><span class="material-icons me-1" style="font-size: 1rem;">edit</span>Editar</a>
-                                        <a class="btn btn-sm btn-outline-danger d-inline-flex align-items-center" href="#"><span class="material-icons me-1" style="font-size: 1rem;">delete</span>Apagar</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col">
-                            <div class="card h-100 hoverTransform overflow-hidden position-relative">
-                                <img class="card-img-top" alt="Hamburguer Obelix" src="https://www.foodandwine.com/thmb/XE8ubzwObCIgMw7qJ9CsqUZocNM=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/MSG-Smash-Burger-FT-RECIPE0124-d9682401f3554ef683e24311abdf342b.jpg" />
-                                <span class="badge text-bg-dark badgeOverlay">Burguer Steak</span>
-                                <div class="card-body">
-                                    <h3 class="h5 card-title">Obelix</h3>
-                                    <p class="card-text text-secondary small">Burger de Picanha 180g, bacon, queijo, alface, tomate, pão brioche e molho dijonnese trufado.</p>
-                                    <div class="d-flex justify-content-end gap-2">
-                                        <a class="btn btn-sm btnEditar d-inline-flex align-items-center" href="#"><span class="material-icons me-1" style="font-size: 1rem;">edit</span>Editar</a>
-                                        <a class="btn btn-sm btn-outline-danger d-inline-flex align-items-center" href="#"><span class="material-icons me-1" style="font-size: 1rem;">delete</span>Apagar</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
+            {% else %}
+            <div class="card shadow-sm border-0">
+                <div class="card-body text-center py-5">
+                    <div class="d-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px; background: linear-gradient(135deg, #9CCC65 0%, #8BC34A 100%); border-radius: 20px; margin: 0 auto;">
+                        <span class="material-icons text-white" style="font-size: 48px;">store</span>
+                    </div>
+                    <h3 class="h5 mb-2" style="color: #1f2937;">Nenhum restaurante cadastrado</h3>
+                    <p class="text-muted">Crie sua conta de restaurante para começar!</p>
+                </div>
+            </div>
+            {% endif %}
         </div>
-        <!-- Modal para Adicionar Item (CSS-only via :target) -->
         <div id="adicionarModal" class="modalContainer" aria-hidden="true">
             <div class="modalContent shadow-lg" role="dialog" aria-modal="true" aria-labelledby="tituloAdicionarItem">
                 <div class="modal-header-custom mb-4">
@@ -175,6 +162,17 @@
                 <form method="post" enctype="multipart/form-data" novalidate id="dishForm">
                     {% csrf_token %}
                     <div class="row g-3">
+                        <div class="col-12">
+                            <label for="campoRestaurante" class="form-label">Restaurante</label>
+                            <select class="form-select" id="campoRestaurante" name="restaurant_id" required>
+                                <option value="" selected disabled>Selecione o restaurante...</option>
+                                {% for restaurant in restaurants %}
+                                <option value="{{ restaurant.id }}" {% if selected_restaurant.id == restaurant.id %}selected{% endif %}>
+                                    {{ restaurant.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
                         <div class="col-12">
                             <label for="campoNome" class="form-label">Nome do prato</label>
                             <input type="text" class="form-control" id="campoNome" name="nome" placeholder="Ex.: Obelix" required />

@@ -113,9 +113,10 @@ def crud(request):
         categoria_nome = request.POST.get('categoria')
         preco = request.POST.get('preco')
         tipo_imagem = request.POST.get('tipoImagem')
+        restaurant_id = request.POST.get('restaurant_id')
         
         # Validações
-        if not nome or not descricao or not preco:
+        if not nome or not descricao or not preco or not restaurant_id:
             return JsonResponse({'success': False, 'error': 'Campos obrigatórios não preenchidos'})
         
         # Busca ou cria a categoria (se fornecida)
@@ -123,11 +124,11 @@ def crud(request):
         if categoria_nome and categoria_nome.strip():
             categoria, _ = Category.objects.get_or_create(name=categoria_nome)
         
-        # Busca o restaurante do usuário logado
+        # Busca o restaurante específico do usuário logado
         try:
-            restaurante = Restaurant.objects.filter(owner=request.user).first()
-            if not restaurante:
-                return JsonResponse({'success': False, 'error': 'Restaurante não encontrado'})
+            restaurante = Restaurant.objects.get(id=restaurant_id, owner=request.user)
+        except Restaurant.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Restaurante não encontrado ou você não tem permissão'})
         except Exception as e:
             return JsonResponse({'success': False, 'error': f'Erro ao buscar restaurante: {str(e)}'})
         
@@ -165,7 +166,65 @@ def crud(request):
             }
         })
     
-    return render(request, 'crud.html')
+    # GET - Passa lista de restaurantes e pratos do restaurante selecionado
+    restaurantes = Restaurant.objects.filter(owner=request.user)
+    
+    # Se tem um restaurant_id na query string, filtra os pratos
+    selected_restaurant_id = request.GET.get('restaurant_id')
+    pratos = []
+    selected_restaurant = None
+    
+    if selected_restaurant_id:
+        try:
+            selected_restaurant = Restaurant.objects.get(id=selected_restaurant_id, owner=request.user)
+            pratos = Dish.objects.filter(restaurant=selected_restaurant).select_related('category')
+        except Restaurant.DoesNotExist:
+            pass
+    elif restaurantes.exists():
+        # Se não selecionou, pega o primeiro restaurante
+        selected_restaurant = restaurantes.first()
+        pratos = Dish.objects.filter(restaurant=selected_restaurant).select_related('category')
+    
+    context = {
+        'restaurants': restaurantes,
+        'dishes': pratos,
+        'selected_restaurant': selected_restaurant
+    }
+    return render(request, 'crud.html', context)
+
+def delete_dish(request, dish_id):
+    if request.method == 'POST':
+        try:
+            # Busca o prato e verifica se pertence a um restaurante do usuário
+            prato = Dish.objects.get(id=dish_id, restaurant__owner=request.user)
+            prato.delete()
+            return JsonResponse({'success': True})
+        except Dish.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Prato não encontrado ou você não tem permissão'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Método não permitido'})
+
+def get_dish(request, dish_id):
+    try:
+        # Busca o prato e verifica se pertence a um restaurante do usuário
+        prato = Dish.objects.get(id=dish_id, restaurant__owner=request.user)
+        return JsonResponse({
+            'success': True,
+            'dish': {
+                'id': prato.id,
+                'name': prato.name,
+                'description': prato.description,
+                'price': str(prato.price),
+                'category': prato.category.name if prato.category else '',
+                'restaurant_id': prato.restaurant.id,
+                'image': prato.image.url if prato.image else None
+            }
+        })
+    except Dish.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Prato não encontrado'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
 
 def exemplo_consumir_api(request):
     try:
