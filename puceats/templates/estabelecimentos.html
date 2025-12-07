@@ -1,97 +1,26 @@
+{% extends 'base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ page_title }} - PUC Eats</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    <link rel="stylesheet" href="{% static 'css/estabelecimentos.css' %}">
-</head>
-<body>
-    <aside class="menu-sidebar" id="menuSidebar">
-        <header class="menu-header">
-            <h1 class="brand">PUC <span>Eats</span></h1>
-        </header>
 
-        <nav class="nav">
-            <a href="{% url 'puceats:index' %}" class="item">
-                <span class="material-icons">home</span>
-                <span>Tela Inicial</span>
-            </a>
-            <a href="{% url 'puceats:restaurantes' %}" class="item {% if establishment_type == 'restaurante' %}active{% endif %}">
-                <span class="material-icons">restaurant</span>
-                <span>Restaurantes</span>
-            </a>
-            <a href="{% url 'puceats:lanchonetes' %}" class="item {% if establishment_type == 'lanchonete' %}active{% endif %}">
-                <span class="material-icons">lunch_dining</span>
-                <span>Lanchonetes</span>
-            </a>
-            <a href="{% url 'puceats:barracas' %}" class="item {% if establishment_type == 'barraca' %}active{% endif %}">
-                <span class="material-icons">storefront</span>
-                <span>Barracas</span>
-            </a>
-            <a href="{% url 'puceats:favoritos' %}" class="item">
-                <span class="material-icons">favorite_border</span>
-                <span>Favoritos</span>
-            </a>
-        </nav>
+{% block title %}{{ page_title }} - PUC Eats{% endblock %}
 
-        <footer class="menu-footer">
-            <a href="{% url 'puceats:login' %}" class="item">
-                <span class="material-icons">store</span>
-                <span>Conta Restaurante</span>
-            </a>
-            <a href="#" class="item">
-                <span class="material-icons">settings</span>
-                <span>Configurações</span>
-            </a>
-        </footer>
-    </aside>
-    
-    <div class="overlay" id="overlay"></div>
-    
-    <header class="modern-header">
-        <div class="header-container">
-            <div class="header-left">
-                <div class="logo-wrapper">
-                    <div class="logo-icon">
-                        <span class="material-icons">place</span>
-                    </div>
-                    <h1 class="logo-text">PUC <span class="logo-accent">Eats</span></h1>
-                </div>
-            </div>
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/estabelecimentos.css' %}">
+{% endblock %}
 
-            <div class="header-center">
-                <div class="search-wrapper">
-                    <span class="material-icons search-icon-left">search</span>
-                    <input type="text" class="search-input" placeholder="Buscar {{ page_title|lower }}...">
-                </div>
-            </div>
+{% block search_placeholder %}Buscar {{ page_title|lower }}...{% endblock %}
+{% block search_placeholder_mobile %}Buscar {{ page_title|lower }}...{% endblock %}
 
-            <div class="header-right">
-                <button class="icon-btn search-mobile-btn" id="searchMobileToggle">
-                    <span class="material-icons">search</span>
-                </button>
-                <button class="icon-btn" id="menuToggle">
-                    <span class="material-icons">menu</span>
-                </button>
-                <button class="icon-btn" id="sidebarToggle">
-                    <span class="material-icons">chevron_left</span>
-                </button>
-            </div>
-        </div>
+{% if establishment_type == 'restaurante' %}
+    {% block nav_restaurantes %}active{% endblock %}
+{% elif establishment_type == 'lanchonete' %}
+    {% block nav_lanchonetes %}active{% endblock %}
+{% elif establishment_type == 'barraca' %}
+    {% block nav_barracas %}active{% endblock %}
+{% endif %}
 
-        <div class="search-mobile" id="searchMobile">
-            <div class="search-wrapper">
-                <span class="material-icons search-icon-left">search</span>
-                <input type="text" class="search-input" placeholder="Buscar {{ page_title|lower }}...">
-            </div>
-        </div>
-    </header>
-    
+{% block header_extra_buttons %}{% endblock %}
+
+{% block content %}
     <main class="page-content">
         <div class="page-header">
             <div class="header-icon-wrapper">
@@ -131,42 +60,8 @@
             {% endfor %}
         </section>
     </main>
+{% endblock %}
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="{% static 'js/script.js' %}"></script>
-    <script>
-        const menuToggle = document.getElementById('menuToggle');
-        const menuSidebar = document.getElementById('menuSidebar');
-        const overlay = document.getElementById('overlay');
-
-        menuToggle.addEventListener('click', function() {
-            menuSidebar.classList.toggle('active');
-            overlay.classList.toggle('active');
-        });
-
-        overlay.addEventListener('click', function() {
-            menuSidebar.classList.remove('active');
-            overlay.classList.remove('active');
-        });
-
-        const sidebarToggle = document.getElementById('sidebarToggle');
-        const sidebar = document.querySelector('.sidebar');
-
-        sidebarToggle.addEventListener('click', function() {
-            sidebar.classList.toggle('hidden');
-            sidebarToggle.classList.toggle('active');
-        });
-
-        const searchMobileToggle = document.getElementById('searchMobileToggle');
-        const searchMobile = document.getElementById('searchMobile');
-
-        searchMobileToggle.addEventListener('click', function() {
-            if (searchMobile.style.display === 'none' || searchMobile.style.display === '') {
-                searchMobile.style.display = 'block';
-            } else {
-                searchMobile.style.display = 'none';
-            }
-        });
-    </script>
-</body>
-</html>
+{% block extra_scripts %}
+<script src="{% static 'js/script.js' %}"></script>
+{% endblock %}
