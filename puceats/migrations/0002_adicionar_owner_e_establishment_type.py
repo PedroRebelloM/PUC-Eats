@@ -1,23 +1,25 @@
-# Generated migration for Token model and Restaurant updates
+# Migration incremental - adiciona owner e establishment_type aos restaurantes existentes
 
 from django.conf import settings
 from django.db import migrations, models
 import django.db.models.deletion
-import secrets
-from django.utils import timezone
-from datetime import timedelta
 
 
 def atribuir_restaurantes_ao_superusuario(apps, schema_editor):
+    """
+    Pega o primeiro superusuário existente e atribui todos os restaurantes a ele.
+    """
     Usuario = apps.get_model(settings.AUTH_USER_MODEL)
     Restaurante = apps.get_model('puceats', 'Restaurant')
     
+    # Buscar qualquer superusuário existente
     superusuario = Usuario.objects.filter(is_superuser=True).first()
     
     if not superusuario:
-        print("Nenhum superusuário encontrado. Crie um com: python manage.py createsuperuser")
+        print("⚠ Nenhum superusuário encontrado. Crie um com: python manage.py createsuperuser")
         return
     
+    # Atribuir todos os restaurantes existentes ao superusuário
     restaurantes = Restaurante.objects.filter(owner__isnull=True)
     quantidade = restaurantes.update(owner=superusuario)
     if quantidade > 0:
@@ -32,6 +34,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        # Criar model Token
         migrations.CreateModel(
             name='Token',
             fields=[
@@ -50,17 +53,20 @@ class Migration(migrations.Migration):
             },
         ),
         
+        # Adicionar campo owner no Restaurant
         migrations.AddField(
             model_name='restaurant',
             name='owner',
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='restaurants', to=settings.AUTH_USER_MODEL, verbose_name='Proprietário'),
         ),
         
+        # Adicionar campo establishment_type no Restaurant
         migrations.AddField(
             model_name='restaurant',
             name='establishment_type',
             field=models.CharField(choices=[('restaurante', 'Restaurante'), ('lanchonete', 'Lanchonete'), ('barraca', 'Barraca')], default='restaurante', max_length=20, verbose_name='Tipo de Estabelecimento'),
         ),
         
+        # Atribuir restaurantes existentes ao superusuário
         migrations.RunPython(atribuir_restaurantes_ao_superusuario),
     ]

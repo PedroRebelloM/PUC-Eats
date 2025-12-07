@@ -12,5 +12,4 @@ urlpatterns = [
     path('favoritos/', views.favoritos, name='favoritos'),
     path('crud/', views.crud, name='crud'),
     path('exemplo-api/', views.exemplo_consumir_api, name='exemplo-api'),
-    path("restaurantes/<slug:slug>/", views.restaurant_detail, name="restaurant_detail"),
 ]

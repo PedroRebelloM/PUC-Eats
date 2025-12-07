@@ -172,7 +172,8 @@
                         <span class="material-icons">close</span>
                     </button>
                 </div>
-                <form action="#" method="post" enctype="multipart/form-data">
+                <form method="post" enctype="multipart/form-data" novalidate id="dishForm">
+                    {% csrf_token %}
                     <div class="row g-3">
                         <div class="col-12">
                             <label for="campoNome" class="form-label">Nome do prato</label>
@@ -186,9 +187,9 @@
                             <label for="campoCategoria" class="form-label">Categoria</label>
                             <select class="form-select" id="campoCategoria" name="categoria" required>
                                 <option value="" selected disabled>Selecione…</option>
-                                <option>Burguer Steak</option>
-                                <option>Vegeterian</option>
-                                <option>Brazilian</option>
+                                <option value="Burguer Steak">Burguer Steak</option>
+                                <option value="Vegeterian">Vegeterian</option>
+                                <option value="Brazilian">Brazilian</option>
                             </select>
                         </div>
                         <div class="col-12 col-md-6">
@@ -199,15 +200,17 @@
                             </div>
                         </div>
                         <div class="col-12">
-                            <label class="form-label d-block">Imagem</label>
+                            <label class="form-label d-block">Imagem (Opcional)</label>
                             <div class="btn-group" role="group" aria-label="Escolha de imagem">
-                                <input type="radio" class="btn-check" name="tipoImagem" id="tipoImagemUrl" value="url" checked data-image-choice>
+                                <input type="radio" class="btn-check" name="tipoImagem" id="tipoImagemNenhuma" value="nenhuma" checked data-image-choice>
+                                <label class="btn btn-outline-secondary" for="tipoImagemNenhuma">Nenhuma</label>
+                                <input type="radio" class="btn-check" name="tipoImagem" id="tipoImagemUrl" value="url" data-image-choice>
                                 <label class="btn btn-outline-secondary" for="tipoImagemUrl">URL</label>
                                 <input type="radio" class="btn-check" name="tipoImagem" id="tipoImagemUpload" value="upload" data-image-choice>
                                 <label class="btn btn-outline-secondary" for="tipoImagemUpload">Upload</label>
                             </div>
                         </div>
-                        <div class="col-12" id="grupoImagemUrl">
+                        <div class="col-12 d-none" id="grupoImagemUrl">
                             <label for="campoImagemUrl" class="form-label">URL da imagem</label>
                             <input type="url" class="form-control" id="campoImagemUrl" name="imagemUrl" placeholder="https://…" />
                         </div>

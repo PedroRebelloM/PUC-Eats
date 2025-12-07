@@ -32,7 +32,8 @@ class Token(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.code:
-            self.code = secrets.token_urlsafe(24)[:32].upper()
+            # Gerar código alfanumérico sem caracteres especiais
+            self.code = secrets.token_hex(16).upper()[:32]
         if not self.expires_at:
             self.expires_at = timezone.now() + timedelta(days=30)
         super().save(*args, **kwargs)

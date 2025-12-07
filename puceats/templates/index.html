@@ -98,14 +98,28 @@
                 <p class="sidebar-subtitle">Lugares próximos para comer</p>
             </div>
             <div class="restaurant-list">
+                {% for restaurant in restaurants %}
                 <div class="restaurant-item">
-                    <div class="restaurant-icon">🍱</div>
+                    <div class="restaurant-icon">
+                        {% if restaurant.cuisine_type == 'japonesa' %}🍱
+                        {% elif restaurant.cuisine_type == 'italiana' %}🍝
+                        {% elif restaurant.cuisine_type == 'brasileira' %}🍖
+                        {% elif restaurant.cuisine_type == 'cafeteria' %}☕
+                        {% elif restaurant.cuisine_type == 'lanches' %}🍔
+                        {% else %}🍽️
+                        {% endif %}
+                    </div>
                     <div class="restaurant-info">
-                        <h3 class="restaurant-name">Soba Sushi</h3>
-                        <p class="restaurant-location">Edifício Cardeal Leme</p>
-                        <p class="restaurant-cuisine">Comida japonesa</p>
+                        <h3 class="restaurant-name">{{ restaurant.name }}</h3>
+                        <p class="restaurant-location">{{ restaurant.building|default:"Campus PUC" }}</p>
+                        <p class="restaurant-cuisine">{{ restaurant.get_cuisine_type_display }}</p>
                     </div>
                 </div>
+                {% empty %}
+                <p style="text-align: center; color: #666; padding: 20px;">
+                    Nenhum restaurante cadastrado ainda.
+                </p>
+                {% endfor %}
             </div>
         </aside>
     </div>
