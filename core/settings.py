@@ -126,7 +126,16 @@ STATICFILES_DIRS = [
     BASE_DIR / "puceats" / "static",
 ]
 
+# Media files (uploaded by users)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Login settings
+LOGIN_URL = '/puceats/login/'
+LOGIN_REDIRECT_URL = '/puceats/crud/'
+LOGOUT_REDIRECT_URL = '/puceats/'

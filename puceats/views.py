@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.utils import timezone
@@ -20,12 +21,22 @@ def index(request):
     return render(request, 'index.html', context)
 
 def login(request):
+    # Se já está logado, faz logout primeiro para evitar sessões antigas
+    if request.user.is_authenticated:
+        auth_logout(request)
+    
     if request.method == 'POST':
-        email_ou_username = request.POST.get('email')
-        senha = request.POST.get('senha')
+        email_ou_username = request.POST.get('email', '').strip()
+        senha = request.POST.get('senha', '')
         
+        if not email_ou_username or not senha:
+            messages.error(request, 'Por favor, preencha seu email/usuário e senha para continuar.')
+            return render(request, 'login.html')
+        
+        # Tenta autenticar por username
         usuario = authenticate(request, username=email_ou_username, password=senha)
         
+        # Se não funcionou, tenta por email
         if not usuario:
             try:
                 user_obj = User.objects.get(email=email_ou_username)
@@ -34,11 +45,15 @@ def login(request):
                 pass
         
         if usuario is not None:
+            # Faz logout de qualquer sessão anterior antes de logar
+            auth_logout(request)
+            # Agora faz login com o usuário correto
             auth_login(request, usuario)
-            messages.success(request, f'Bem-vindo, {usuario.username}!')
+            nome_exibir = usuario.first_name if usuario.first_name else usuario.username
+            messages.success(request, f'Bem-vindo de volta, {nome_exibir}! Login realizado com sucesso.')
             return redirect('puceats:crud')
         else:
-            messages.error(request, 'Email/Usuário ou senha incorretos.')
+            messages.error(request, 'Credenciais inválidas. Verifique seu email/usuário e senha e tente novamente.')
     
     return render(request, 'login.html')
 
@@ -52,11 +67,11 @@ def cadastro(request):
         nome_restaurante = request.POST.get('nome_restaurante')
         
         if senha != confirmar_senha:
-            messages.error(request, 'As senhas não coincidem.')
+            messages.error(request, 'As senhas não coincidem. Por favor, digite a mesma senha nos dois campos.')
             return render(request, 'cadastro.html')
         
         if User.objects.filter(email=email).exists():
-            messages.error(request, 'Email já cadastrado.')
+            messages.error(request, 'Este email já está cadastrado. Faça login ou use outro email.')
             return render(request, 'cadastro.html')
         
         try:
@@ -85,11 +100,11 @@ def cadastro(request):
             token.save()
             
             auth_login(request, usuario)
-            messages.success(request, f'Conta criada com sucesso! Restaurante "{nome_restaurante}" cadastrado.')
+            messages.success(request, f'🎉 Conta criada com sucesso! Bem-vindo ao PUC Eats, {nome}! Seu restaurante "{nome_restaurante}" foi cadastrado.')
             return redirect('puceats:crud')
             
         except Token.DoesNotExist:
-            messages.error(request, 'Token não encontrado.')
+            messages.error(request, 'Token não encontrado. Verifique se digitou corretamente ou entre em contato com o administrador.')
             return render(request, 'cadastro.html')
     
     return render(request, 'cadastro.html')
@@ -102,10 +117,17 @@ def favoritos(request):
 
 def logout(request):
     """View para fazer logout do usuário"""
+    nome_exibir = ''
+    if request.user.is_authenticated:
+        nome_exibir = request.user.first_name if request.user.first_name else request.user.username
     auth_logout(request)
-    messages.success(request, 'Você saiu da sua conta.')
+    if nome_exibir:
+        messages.success(request, f'Até logo, {nome_exibir}! Volte sempre ao PUC Eats.')
+    else:
+        messages.success(request, 'Logout realizado com sucesso. Até breve!')
     return redirect('puceats:index')
 
+@login_required(login_url='/puceats/login/')
 def crud(request):
     if request.method == 'POST':
         nome = request.POST.get('nome')
@@ -114,6 +136,7 @@ def crud(request):
         preco = request.POST.get('preco')
         tipo_imagem = request.POST.get('tipoImagem')
         restaurant_id = request.POST.get('restaurant_id')
+        dish_id = request.POST.get('dish_id')  # Para edição
         
         # Validações
         if not nome or not descricao or not preco or not restaurant_id:
@@ -132,25 +155,40 @@ def crud(request):
         except Exception as e:
             return JsonResponse({'success': False, 'error': f'Erro ao buscar restaurante: {str(e)}'})
         
-        # Cria o prato
-        prato = Dish(
-            restaurant=restaurante,
-            category=categoria,
-            name=nome,
-            description=descricao,
-            price=preco
-        )
+        # Edita ou cria o prato
+        if dish_id:
+            try:
+                prato = Dish.objects.get(id=dish_id, restaurant__owner=request.user)
+                prato.name = nome
+                prato.description = descricao
+                prato.price = preco
+                prato.category = categoria
+                prato.restaurant = restaurante
+            except Dish.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Prato não encontrado'})
+        else:
+            # Criação
+            prato = Dish(
+                restaurant=restaurante,
+                category=categoria,
+                name=nome,
+                description=descricao,
+                price=preco
+            )
         
         # Processa a imagem conforme o tipo escolhido
         if tipo_imagem == 'url':
             imagem_url = request.POST.get('imagemUrl')
             if imagem_url:
                 prato.image = imagem_url
+            elif not dish_id:  # Se é criação e não tem URL, deixa None
+                prato.image = None
         elif tipo_imagem == 'upload':
             imagem_arquivo = request.FILES.get('imagemArquivo')
             if imagem_arquivo:
                 prato.image = imagem_arquivo
-        # Se for 'nenhuma', não faz nada (image fica None/null)
+        elif tipo_imagem == 'nenhuma':
+            prato.image = None
         
         prato.save()
         
@@ -167,7 +205,11 @@ def crud(request):
         })
     
     # GET - Passa lista de restaurantes e pratos do restaurante selecionado
+    # Debug: Verifica qual usuário está logado
+    print(f"DEBUG: Usuário logado = {request.user.username} (ID: {request.user.id})")
+    
     restaurantes = Restaurant.objects.filter(owner=request.user)
+    print(f"DEBUG: Encontrados {restaurantes.count()} restaurantes para o usuário {request.user.username}")
     
     # Se tem um restaurant_id na query string, filtra os pratos
     selected_restaurant_id = request.GET.get('restaurant_id')
@@ -181,7 +223,6 @@ def crud(request):
         except Restaurant.DoesNotExist:
             pass
     elif restaurantes.exists():
-        # Se não selecionou, pega o primeiro restaurante
         selected_restaurant = restaurantes.first()
         pratos = Dish.objects.filter(restaurant=selected_restaurant).select_related('category')
     
@@ -192,6 +233,7 @@ def crud(request):
     }
     return render(request, 'crud.html', context)
 
+@login_required(login_url='/puceats/login/')
 def delete_dish(request, dish_id):
     if request.method == 'POST':
         try:
@@ -205,9 +247,9 @@ def delete_dish(request, dish_id):
             return JsonResponse({'success': False, 'error': str(e)})
     return JsonResponse({'success': False, 'error': 'Método não permitido'})
 
+@login_required(login_url='/puceats/login/')
 def get_dish(request, dish_id):
     try:
-        # Busca o prato e verifica se pertence a um restaurante do usuário
         prato = Dish.objects.get(id=dish_id, restaurant__owner=request.user)
         return JsonResponse({
             'success': True,
@@ -225,6 +267,54 @@ def get_dish(request, dish_id):
         return JsonResponse({'success': False, 'error': 'Prato não encontrado'})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+
+@login_required(login_url='/puceats/login/')
+def add_restaurant(request):
+    if request.method == 'POST':
+        token_code = request.POST.get('token', '').strip()
+        nome_restaurante = request.POST.get('nome_restaurante', '').strip()
+        establishment_type = request.POST.get('establishment_type', '').strip()
+        
+        if not token_code or not nome_restaurante or not establishment_type:
+            messages.error(request, 'Por favor, preencha todos os campos (token, nome do restaurante e tipo de estabelecimento).')
+            return redirect('puceats:crud')
+        
+        try:
+            # Valida o token
+            token = Token.objects.get(code=token_code.upper())
+            
+            if not token.is_valid():
+                messages.error(request, 'Token inválido ou expirado. Solicite um novo token ao administrador.')
+                return redirect('puceats:crud')
+            
+            if token.is_used:
+                messages.error(request, 'Este token já foi utilizado. Cada token pode ser usado apenas uma vez. Solicite um novo token.')
+                return redirect('puceats:crud')
+            
+            # Cria o restaurante
+            restaurante = Restaurant.objects.create(
+                owner=request.user,
+                name=nome_restaurante,
+                establishment_type=establishment_type
+            )
+            
+            # Marca o token como usado
+            token.is_used = True
+            token.used_by = request.user
+            token.used_at = timezone.now()
+            token.save()
+            
+            messages.success(request, f'Parabéns! Restaurante "{nome_restaurante}" criado com sucesso! Você já pode começar a adicionar pratos ao cardápio.')
+            return redirect(f'/puceats/crud/?restaurant_id={restaurante.id}')
+            
+        except Token.DoesNotExist:
+            messages.error(request, 'Token não encontrado. Verifique se digitou corretamente.')
+            return redirect('puceats:crud')
+        except Exception as e:
+            messages.error(request, f'Ops! Ocorreu um erro ao criar o restaurante: {str(e)}. Tente novamente ou entre em contato com o suporte.')
+            return redirect('puceats:crud')
+    
+    return redirect('puceats:crud')
 
 def exemplo_consumir_api(request):
     try:

@@ -11,5 +11,8 @@ urlpatterns = [
     path('esqueci-senha/', views.esqueci_senha, name='esqueci-senha'),
     path('favoritos/', views.favoritos, name='favoritos'),
     path('crud/', views.crud, name='crud'),
+    path('add-restaurant/', views.add_restaurant, name='add_restaurant'),
+    path('dish/<int:dish_id>/delete/', views.delete_dish, name='delete_dish'),
+    path('dish/<int:dish_id>/get/', views.get_dish, name='get_dish'),
     path('exemplo-api/', views.exemplo_consumir_api, name='exemplo-api'),
 ]

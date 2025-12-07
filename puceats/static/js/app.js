@@ -26,6 +26,15 @@
       e.preventDefault();
       const targetSel = opener.getAttribute('data-modal-target');
       const modal = document.querySelector(targetSel);
+      
+      // Limpa o formulário quando abrir para adicionar
+      const form = modal.querySelector('form');
+      if (form) {
+        form.reset();
+        form.removeAttribute('data-dish-id');
+        if (typeof updateImageChoice === 'function') updateImageChoice();
+      }
+      
       openModal(modal);
     });
   });
@@ -105,6 +114,12 @@
       const formData = new FormData(form);
       const modal = form.closest('.modalContainer');
       
+      // Se está editando, adiciona o dish_id
+      const dishId = form.getAttribute('data-dish-id');
+      if (dishId) {
+        formData.append('dish_id', dishId);
+      }
+      
       // Restaura os names
       if(!campoUrl.hasAttribute('name')) campoUrl.setAttribute('name', 'imagemUrl');
       if(!campoUpload.hasAttribute('name')) campoUpload.setAttribute('name', 'imagemArquivo');
@@ -138,6 +153,7 @@
           
           // Limpa o formulário
           form.reset();
+          form.removeAttribute('data-dish-id');
           updateImageChoice();
           
           // Recarrega a página para mostrar o novo prato
