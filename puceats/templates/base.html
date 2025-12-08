@@ -53,6 +53,18 @@
     
     <div class="overlay" id="overlay"></div>
     
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+    
+    <!-- Mensagens do Django (escondidas) -->
+    {% if messages %}
+    <div class="messages-data" style="display: none;">
+        {% for message in messages %}
+        <div data-message="{{ message }}" data-type="{% if message.tags %}{{ message.tags }}{% else %}success{% endif %}"></div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
     <header class="modern-header">
         <div class="header-container">
             <div class="header-left">
@@ -78,11 +90,7 @@
                 <button class="icon-btn" id="menuToggle">
                     <span class="material-icons">menu</span>
                 </button>
-                {% block header_extra_buttons %}
-                <button class="icon-btn" id="sidebarToggle">
-                    <span class="material-icons">chevron_left</span>
-                </button>
-                {% endblock %}
+                {% block header_extra_buttons %}{% endblock %}
             </div>
         </div>
 
@@ -104,15 +112,14 @@
         const menuSidebar = document.getElementById('menuSidebar');
         const overlay = document.getElementById('overlay');
 
-        menuToggle.addEventListener('click', function() {
-            menuSidebar.classList.toggle('active');
+        function toggleMenu() {
+            menuSidebar.classList.toggle('open');
             overlay.classList.toggle('active');
-        });
+        }
 
-        overlay.addEventListener('click', function() {
-            menuSidebar.classList.remove('active');
-            overlay.classList.remove('active');
-        });
+        menuToggle.addEventListener('click', toggleMenu);
+
+        overlay.addEventListener('click', toggleMenu);
 
         const sidebarToggle = document.getElementById('sidebarToggle');
         if (sidebarToggle) {
@@ -133,6 +140,59 @@
                 searchMobile.style.display = 'block';
             } else {
                 searchMobile.style.display = 'none';
+            }
+        });
+    </script>
+    
+    <script>
+        // Sistema de Toast Notifications
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            let icon = 'check_circle';
+            if (type === 'error') icon = 'error';
+            else if (type === 'warning') icon = 'warning';
+            
+            toast.innerHTML = `
+              <div class="toast-icon">
+                <span class="material-icons">${icon}</span>
+              </div>
+              <div class="toast-content">
+                <div class="toast-message">${message}</div>
+              </div>
+              <button class="toast-close" onclick="removeToast(this.parentElement)">
+                <span class="material-icons">close</span>
+              </button>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Auto remove após 6 segundos
+            setTimeout(() => {
+                removeToast(toast);
+            }, 6000);
+        }
+        
+        function removeToast(toast) {
+            toast.classList.add('removing');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }
+        
+        // Exibe mensagens do Django
+        document.addEventListener('DOMContentLoaded', function() {
+            const messagesData = document.querySelector('.messages-data');
+            if (messagesData) {
+                const messages = messagesData.querySelectorAll('[data-message]');
+                messages.forEach((msg, index) => {
+                    setTimeout(() => {
+                        showToast(msg.dataset.message, msg.dataset.type);
+                    }, index * 150);
+                });
             }
         });
     </script>
