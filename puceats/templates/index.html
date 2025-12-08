@@ -44,31 +44,6 @@
                 <p style="text-align: center; color: #666; padding: 20px;">
                     Nenhum restaurante cadastrado ainda.
                 </p>
-                    <div class="restaurant-item">
-                        <div class="restaurant-icon">🍽️</div>
-
-                        <div class="restaurant-info">
-                            <h3 class="restaurant-name">{{ restaurant.name }}</h3>
-
-                            {# prédio / localização no campus, se tiver preenchido #}
-                            {% if restaurant.building %}
-                                <p class="restaurant-location">
-                                    {{ restaurant.building }}
-                                </p>
-                            {% endif %}
-
-                            {# tipo de cozinha (usa as choices do modelo) #}
-                            {% if restaurant.get_cuisine_type_display %}
-                                <p class="restaurant-cuisine">
-                                    {{ restaurant.get_cuisine_type_display }}
-                                </p>
-                            {% endif %}
-                        </div>
-                    </div>
-                {% empty %}
-                    <p class="restaurant-location">
-                        Nenhum restaurante cadastrado.
-                    </p>
                 {% endfor %}
             </div>
         </aside>
