@@ -14,6 +14,38 @@
         <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
         <link rel="stylesheet" href="{% static 'css/crud.css' %}">
+        <style>
+            .modalContent {
+                max-height: 85vh !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+            }
+            
+            /* Customizar scrollbar */
+            .modalContent::-webkit-scrollbar {
+                width: 8px;
+            }
+            
+            .modalContent::-webkit-scrollbar-track {
+                background: #f1f1f1;
+                border-radius: 10px;
+            }
+            
+            .modalContent::-webkit-scrollbar-thumb {
+                background: #9CCC65;
+                border-radius: 10px;
+            }
+            
+            .modalContent::-webkit-scrollbar-thumb:hover {
+                background: #8BC34A;
+            }
+            
+            @media (max-width: 576px) {
+                .modalContent { 
+                    max-height: 90vh !important;
+                }
+            }
+        </style>
     </head>
     <body class="bg-light">
         <header class="modern-header sticky-top bg-white border-bottom shadow-sm">
@@ -43,9 +75,13 @@
                             <span class="material-icons me-1" style="font-size: 18px;">arrow_back</span>
                             <span class="d-none d-md-inline">Voltar</span>
                         </a>
-                        <a id="abrirModalAdicionar" class="btn btn-success d-inline-flex align-items-center" href="#" data-modal-target="#adicionarModal">
+                        <a href="{% url 'puceats:crud-restaurantes' %}" class="btn btn-outline-primary d-inline-flex align-items-center">
+                            <span class="material-icons me-1" style="font-size: 18px;">store</span>
+                            <span class="d-none d-md-inline">Restaurantes</span>
+                        </a>
+                        <a id="abrirModalAdicionar" class="btn btn-success d-inline-flex align-items-center" href="#adicionarModal">
                             <span class="material-icons me-1" style="font-size: 18px;">add</span>
-                            <span>Adicionar</span>
+                            <span>Adicionar Prato</span>
                         </a>
                         {% if user.is_authenticated %}
                         <a href="{% url 'puceats:logout' %}" class="btn btn-outline-danger d-inline-flex align-items-center">
@@ -114,6 +150,7 @@
                             <div class="input-group">
                                 <span class="input-group-text bg-white"><span class="material-icons">search</span></span>
                                 <input type="text" class="form-control" placeholder="Pesquisar prato" id="searchInput" />
+                                <input type="text" class="form-control" id="searchInput" placeholder="Pesquisar prato" />
                             </div>
                         </div>
                         <div class="col-12 col-md-auto">
@@ -123,6 +160,8 @@
                                     {% if dish.category %}
                                     <option value="{{ dish.category.name }}">{{ dish.category.name }}</option>
                                     {% endif %}
+                                {% for category in categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -131,6 +170,7 @@
                     <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4" id="dishesContainer">
                         {% for dish in dishes %}
                         <div class="col dish-item" data-category="{{ dish.category.name|default:'' }}" data-name="{{ dish.name|lower }}">
+                        <div class="col dish-item" data-dish-id="{{ dish.id }}" data-category-id="{{ dish.category.id|default:'' }}" data-search="{{ dish.name|lower }} {{ dish.description|lower }}">
                             <div class="card h-100 hoverTransform overflow-hidden position-relative">
                                 {% if dish.image %}
                                 <img class="card-img-top" alt="{{ dish.name }}" src="{{ dish.image.url }}" />
@@ -138,6 +178,7 @@
                                 <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 200px;">
                                     <span class="material-icons text-white" style="font-size: 64px;">restaurant</span>
                                 </div>
+                                <img class="card-img-top" alt="{{ dish.name }}" src="https://via.placeholder.com/400x300?text={{ dish.name|urlencode }}" />
                                 {% endif %}
                                 {% if dish.category %}
                                 <span class="badge text-bg-dark badgeOverlay">{{ dish.category.name }}</span>
@@ -153,6 +194,11 @@
                                         <a class="btn btn-sm btn-outline-danger d-inline-flex align-items-center" href="#" data-dish-id="{{ dish.id }}">
                                             <span class="material-icons me-1" style="font-size: 1rem;">delete</span>Apagar
                                         </a>
+                                    <p class="text-success fw-bold mb-2">R$ {{ dish.price }}</p>
+                                    <p class="text-muted small mb-3"><strong>Restaurante:</strong> {{ dish.restaurant.name }}</p>
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <button class="btn btn-sm btnEditar d-inline-flex align-items-center" onclick="editDish({{ dish.id }})"><span class="material-icons me-1" style="font-size: 1rem;">edit</span>Editar</button>
+                                        <button class="btn btn-sm btn-outline-danger d-inline-flex align-items-center" onclick="deleteDish({{ dish.id }}, '{{ dish.name|escapejs }}')"><span class="material-icons me-1" style="font-size: 1rem;">delete</span>Apagar</button>
                                     </div>
                                 </div>
                             </div>
@@ -172,6 +218,13 @@
                 <div class="card-body text-center py-5">
                     <div class="d-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px; background: linear-gradient(135deg, #9CCC65 0%, #8BC34A 100%); border-radius: 20px; margin: 0 auto;">
                         <span class="material-icons text-white" style="font-size: 48px;">store</span>
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <span class="material-icons" style="vertical-align: middle;">info</span>
+                                Nenhum prato cadastrado ainda. Clique em "Adicionar Prato" para começar.
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
                     <h3 class="h5 mb-2" style="color: #1f2937;">Nenhum restaurante cadastrado</h3>
                     <p class="text-muted">Crie sua conta de restaurante para começar!</p>
@@ -201,16 +254,28 @@
                                 <option value="{{ restaurant.id }}" {% if selected_restaurant.id == restaurant.id %}selected{% endif %}>
                                     {{ restaurant.name }}
                                 </option>
+                <form id="dishForm" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" id="dishId" name="dish_id">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="campoRestaurante" class="form-label">Restaurante *</label>
+                            <select class="form-select" id="campoRestaurante" name="restaurant" required>
+                                <option value="" selected disabled>Selecione o restaurante…</option>
+                                {% for restaurant in restaurants %}
+                                <option value="{{ restaurant.id }}">{{ restaurant.name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                         <div class="col-12">
                             <label for="campoNome" class="form-label">Nome do prato</label>
                             <input type="text" class="form-control" id="campoNome" name="nome" placeholder="Ex.: Obelix" required />
+                            <label for="campoNome" class="form-label">Nome do prato *</label>
+                            <input type="text" class="form-control" id="campoNome" name="name" placeholder="Ex.: Obelix" required />
                         </div>
                         <div class="col-12">
                             <label for="campoDescricao" class="form-label">Descrição</label>
-                            <textarea class="form-control" id="campoDescricao" name="descricao" rows="3" placeholder="Descreva o prato" required></textarea>
+                            <textarea class="form-control" id="campoDescricao" name="description" rows="3" placeholder="Descreva o prato"></textarea>
                         </div>
                         <div class="col-12 col-md-6">
                             <label for="campoCategoria" class="form-label">Categoria</label>
@@ -219,13 +284,18 @@
                                 <option value="Burguer Steak">Burguer Steak</option>
                                 <option value="Vegeterian">Vegeterian</option>
                                 <option value="Brazilian">Brazilian</option>
+                            <select class="form-select" id="campoCategoria" name="category">
+                                <option value="">Selecione…</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                                {% endfor %}
                             </select>
                         </div>
                         <div class="col-12 col-md-6">
-                            <label for="campoPreco" class="form-label">Preço</label>
+                            <label for="campoPreco" class="form-label">Preço *</label>
                             <div class="input-group">
                                 <span class="input-group-text">R$</span>
-                                <input type="number" class="form-control" id="campoPreco" name="preco" min="0" step="0.01" placeholder="0,00" required />
+                                <input type="number" class="form-control" id="campoPreco" name="price" min="0" step="0.01" placeholder="0,00" required />
                             </div>
                         </div>
                         <div class="col-12">
@@ -246,6 +316,22 @@
                         <div class="col-12 d-none" id="grupoImagemUpload">
                             <label for="campoImagemUpload" class="form-label">Upload da imagem</label>
                             <input type="file" class="form-control" id="campoImagemUpload" name="imagemArquivo" accept="image/*" />
+                            <label for="campoImagem" class="form-label">Imagem</label>
+                            <input type="file" class="form-control" id="campoImagem" name="image" accept="image/*" />
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="campoVegano" name="is_vegan">
+                                <label class="form-check-label" for="campoVegano">Vegano</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="campoVegetariano" name="is_vegetarian">
+                                <label class="form-check-label" for="campoVegetariano">Vegetariano</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="campoSemGluten" name="is_gluten_free">
+                                <label class="form-check-label" for="campoSemGluten">Sem Glúten</label>
+                            </div>
                         </div>
                     </div>
                     <div class="d-flex justify-content-end gap-2 mt-4">
@@ -370,5 +456,199 @@
         </script>
         
         <script src="{% static 'js/app.js' %}"></script>
+        <script>
+            // Dados dos pratos em JSON para edição
+            const dishesData = {
+                {% for dish in dishes %}
+                {{ dish.id }}: {
+                    id: {{ dish.id }},
+                    name: "{{ dish.name|escapejs }}",
+                    description: "{{ dish.description|escapejs }}",
+                    price: "{{ dish.price }}",
+                    restaurant: {{ dish.restaurant.id }},
+                    category: {{ dish.category.id|default:"null" }},
+                    is_vegan: {{ dish.is_vegan|yesno:"true,false" }},
+                    is_vegetarian: {{ dish.is_vegetarian|yesno:"true,false" }},
+                    is_gluten_free: {{ dish.is_gluten_free|yesno:"true,false" }}
+                }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            };
+
+            // Função para deletar prato
+            function deleteDish(dishId, dishName) {
+                if (!confirm(`Tem certeza que deseja deletar "${dishName}"?`)) {
+                    return;
+                }
+
+                fetch(`/puceats/crud/dish/${dishId}/delete/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const dishElement = document.querySelector(`[data-dish-id="${dishId}"]`);
+                        if (dishElement) {
+                            dishElement.remove();
+                        }
+                        
+                        // Verificar se não há mais pratos
+                        if (document.querySelectorAll('.dish-item').length === 0) {
+                            document.getElementById('dishesContainer').innerHTML = 
+                                '<div class="col-12"><div class="alert alert-info"><span class="material-icons" style="vertical-align: middle;">info</span> Nenhum prato cadastrado ainda.</div></div>';
+                        }
+                        alert('Prato deletado com sucesso!');
+                    } else {
+                        alert('Erro ao deletar: ' + (data.error || 'Erro desconhecido'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    alert('Erro ao deletar o prato');
+                });
+            }
+
+            // Função para editar prato
+            function editDish(dishId) {
+                const dish = dishesData[dishId];
+                if (!dish) return;
+
+                // Preencher o formulário
+                document.getElementById('dishId').value = dish.id;
+                document.getElementById('campoNome').value = dish.name;
+                document.getElementById('campoDescricao').value = dish.description;
+                document.getElementById('campoPreco').value = dish.price;
+                document.getElementById('campoRestaurante').value = dish.restaurant;
+                if (dish.category) {
+                    document.getElementById('campoCategoria').value = dish.category;
+                }
+                document.getElementById('campoVegano').checked = dish.is_vegan;
+                document.getElementById('campoVegetariano').checked = dish.is_vegetarian;
+                document.getElementById('campoSemGluten').checked = dish.is_gluten_free;
+
+                // Mudar título do modal
+                document.getElementById('tituloAdicionarItem').textContent = 'Editar Item';
+                
+                // Abrir modal
+                openModal();
+            }
+
+            // Submit do formulário
+            document.getElementById('dishForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                const dishId = document.getElementById('dishId').value;
+                
+                let url = dishId ? 
+                    `/puceats/crud/dish/${dishId}/edit/` : 
+                    '/puceats/crud/dish/add/';
+
+                fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        closeModal();
+                        alert(dishId ? 'Prato atualizado com sucesso!' : 'Prato adicionado com sucesso!');
+                        window.location.reload();
+                    } else {
+                        alert('Erro: ' + (data.error || 'Erro desconhecido'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    alert('Erro ao salvar o prato');
+                });
+            });
+
+            // Limpar formulário ao abrir modal para adicionar
+            document.getElementById('abrirModalAdicionar').addEventListener('click', function(e) {
+                e.preventDefault();
+                document.getElementById('dishForm').reset();
+                document.getElementById('dishId').value = '';
+                document.getElementById('tituloAdicionarItem').textContent = 'Adicionar Novo Item';
+                openModal();
+            });
+
+            // Funções para controlar o modal
+            function openModal() {
+                const modal = document.getElementById('adicionarModal');
+                modal.classList.add('isOpen');
+                document.body.classList.add('modalOpen');
+            }
+
+            function closeModal() {
+                const modal = document.getElementById('adicionarModal');
+                modal.classList.remove('isOpen');
+                document.body.classList.remove('modalOpen');
+            }
+
+            // Fechar modal ao clicar no backdrop ou botão fechar
+            document.querySelectorAll('[data-modal-close]').forEach(element => {
+                element.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    closeModal();
+                });
+            });
+
+            // Fechar modal ao pressionar ESC
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeModal();
+                }
+            });
+
+            // Filtro de busca
+            document.getElementById('searchInput').addEventListener('input', function(e) {
+                const searchTerm = e.target.value.toLowerCase();
+                filterDishes();
+            });
+
+            // Filtro de categoria
+            document.getElementById('categoryFilter').addEventListener('change', function() {
+                filterDishes();
+            });
+
+            function filterDishes() {
+                const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+                const categoryId = document.getElementById('categoryFilter').value;
+                const dishes = document.querySelectorAll('.dish-item');
+
+                dishes.forEach(dish => {
+                    const searchText = dish.dataset.search;
+                    const dishCategory = dish.dataset.categoryId;
+                    
+                    const matchesSearch = !searchTerm || searchText.includes(searchTerm);
+                    const matchesCategory = !categoryId || dishCategory === categoryId;
+
+                    dish.style.display = matchesSearch && matchesCategory ? '' : 'none';
+                });
+            }
+
+            // Função auxiliar para pegar CSRF token
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+        </script>
     </body>
 </html>

@@ -16,8 +16,6 @@ env/
 
 # Django
 *.log
-db.sqlite3
-db.sqlite3-journal
 media/
 staticfiles/
 
@@ -33,5 +31,4 @@ staticfiles/
 *~
 
 # OS
-.DS_Store
-Thumbs.db
+

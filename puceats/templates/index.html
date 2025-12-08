@@ -14,11 +14,14 @@
 {% block content %}
     <div class="main-container">
         <div id="map"></div>
-        <aside class="sidebar">
+
+        <!-- Lateral com scroll e restaurantes do banco -->
+        <aside class="sidebar" style="overflow-y: auto;">
             <div class="sidebar-header">
                 <h2>Restaurantes</h2>
                 <p class="sidebar-subtitle">Lugares próximos para comer</p>
             </div>
+
             <div class="restaurant-list">
                 {% for restaurant in restaurants %}
                 <div class="restaurant-item">
@@ -41,6 +44,31 @@
                 <p style="text-align: center; color: #666; padding: 20px;">
                     Nenhum restaurante cadastrado ainda.
                 </p>
+                    <div class="restaurant-item">
+                        <div class="restaurant-icon">🍽️</div>
+
+                        <div class="restaurant-info">
+                            <h3 class="restaurant-name">{{ restaurant.name }}</h3>
+
+                            {# prédio / localização no campus, se tiver preenchido #}
+                            {% if restaurant.building %}
+                                <p class="restaurant-location">
+                                    {{ restaurant.building }}
+                                </p>
+                            {% endif %}
+
+                            {# tipo de cozinha (usa as choices do modelo) #}
+                            {% if restaurant.get_cuisine_type_display %}
+                                <p class="restaurant-cuisine">
+                                    {{ restaurant.get_cuisine_type_display }}
+                                </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% empty %}
+                    <p class="restaurant-location">
+                        Nenhum restaurante cadastrado.
+                    </p>
                 {% endfor %}
             </div>
         </aside>

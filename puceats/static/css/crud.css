@@ -269,6 +269,7 @@ body.bg-light {
 .modalContent {
     position: relative;
     width: min(680px, 92vw);
+    max-height: 85vh;
     margin: 6vh auto 0 auto;
     background: #ffffff; 
     border-radius: 16px;
@@ -278,15 +279,36 @@ body.bg-light {
     opacity: 0;
     transform: translateY(-8px);
     transition: transform .2s ease, opacity .2s ease;
-    z-index: 1; 
+    z-index: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 .modalContainer.isOpen .modalContent {
     opacity: 1;
     transform: none;
 }
 
+/* Customizar scrollbar */
+.modalContent::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modalContent::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.modalContent::-webkit-scrollbar-thumb {
+    background: #9CCC65;
+    border-radius: 10px;
+}
+
+.modalContent::-webkit-scrollbar-thumb:hover {
+    background: #8BC34A;
+}
+
 @media (max-width: 576px) {
-    .modalContent { margin-top: 4vh; padding: 24px; }
+    .modalContent { margin-top: 4vh; padding: 24px; max-height: 90vh; }
 }
 
 body.modalOpen {
