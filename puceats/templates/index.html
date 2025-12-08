@@ -22,13 +22,13 @@
             <div class="restaurant-list">
                 {% for restaurant in restaurants %}
                 <div class="restaurant-item">
-                    <div class="restaurant-icon">
-                        {% if restaurant.cuisine_type == 'japonesa' %}🍱
-                        {% elif restaurant.cuisine_type == 'italiana' %}🍝
-                        {% elif restaurant.cuisine_type == 'brasileira' %}🍖
-                        {% elif restaurant.cuisine_type == 'cafeteria' %}☕
-                        {% elif restaurant.cuisine_type == 'lanches' %}🍔
-                        {% else %}🍽️
+                    <div class="restaurant-image">
+                        {% if restaurant.logo %}
+                        <img src="{{ restaurant.logo.url }}" alt="{{ restaurant.name }}">
+                        {% else %}
+                        <div class="restaurant-placeholder">
+                            <span class="material-icons">restaurant</span>
+                        </div>
                         {% endif %}
                     </div>
                     <div class="restaurant-info">
