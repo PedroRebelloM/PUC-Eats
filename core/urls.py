@@ -27,6 +27,7 @@ urlpatterns = [
     path("", RedirectView.as_view(url='/puceats/', permanent=False)),
 ]
 
+# Serve media files in development
 # Servir arquivos de media em desenvolvimento
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

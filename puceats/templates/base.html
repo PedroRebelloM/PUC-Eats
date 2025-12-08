@@ -1,0 +1,200 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PUC Eats{% endblock %}</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <aside class="menu-sidebar" id="menuSidebar">
+        <header class="menu-header">
+            <h1 class="brand">PUC <span>Eats</span></h1>
+        </header>
+
+        <nav class="nav">
+            <a href="{% url 'puceats:index' %}" class="item {% block nav_index %}{% endblock %}">
+                <span class="material-icons">home</span>
+                <span>Tela Inicial</span>
+            </a>
+            <a href="{% url 'puceats:restaurantes' %}" class="item {% block nav_restaurantes %}{% endblock %}">
+                <span class="material-icons">restaurant</span>
+                <span>Restaurantes</span>
+            </a>
+            <a href="{% url 'puceats:lanchonetes' %}" class="item {% block nav_lanchonetes %}{% endblock %}">
+                <span class="material-icons">lunch_dining</span>
+                <span>Lanchonetes</span>
+            </a>
+            <a href="{% url 'puceats:barracas' %}" class="item {% block nav_barracas %}{% endblock %}">
+                <span class="material-icons">storefront</span>
+                <span>Barracas</span>
+            </a>
+            <a href="{% url 'puceats:favoritos' %}" class="item {% block nav_favoritos %}{% endblock %}">
+                <span class="material-icons">favorite_border</span>
+                <span>Favoritos</span>
+            </a>
+        </nav>
+
+        <footer class="menu-footer">
+            <a href="{% url 'puceats:login' %}" class="item">
+                <span class="material-icons">store</span>
+                <span>Conta Restaurante</span>
+            </a>
+            <a href="#" class="item">
+                <span class="material-icons">settings</span>
+                <span>Configurações</span>
+            </a>
+        </footer>
+    </aside>
+    
+    <div class="overlay" id="overlay"></div>
+    
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+    
+    <!-- Mensagens do Django (escondidas) -->
+    {% if messages %}
+    <div class="messages-data" style="display: none;">
+        {% for message in messages %}
+        <div data-message="{{ message }}" data-type="{% if message.tags %}{{ message.tags }}{% else %}success{% endif %}"></div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <header class="modern-header">
+        <div class="header-container">
+            <div class="header-left">
+                <div class="logo-wrapper">
+                    <div class="logo-icon">
+                        <span class="material-icons">place</span>
+                    </div>
+                    <h1 class="logo-text">PUC <span class="logo-accent">Eats</span></h1>
+                </div>
+            </div>
+
+            <div class="header-center">
+                <div class="search-wrapper">
+                    <span class="material-icons search-icon-left">search</span>
+                    <input type="text" class="search-input" placeholder="{% block search_placeholder %}Buscar restaurantes, pratos...{% endblock %}">
+                </div>
+            </div>
+
+            <div class="header-right">
+                <button class="icon-btn search-mobile-btn" id="searchMobileToggle">
+                    <span class="material-icons">search</span>
+                </button>
+                <button class="icon-btn" id="menuToggle">
+                    <span class="material-icons">menu</span>
+                </button>
+                {% block header_extra_buttons %}{% endblock %}
+            </div>
+        </div>
+
+        <div class="search-mobile" id="searchMobile">
+            <div class="search-wrapper">
+                <span class="material-icons search-icon-left">search</span>
+                <input type="text" class="search-input" placeholder="{% block search_placeholder_mobile %}Buscar restaurantes, pratos...{% endblock %}">
+            </div>
+        </div>
+    </header>
+    
+    {% block content %}{% endblock %}
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    {% block extra_scripts %}{% endblock %}
+    
+    <script>
+        const menuToggle = document.getElementById('menuToggle');
+        const menuSidebar = document.getElementById('menuSidebar');
+        const overlay = document.getElementById('overlay');
+
+        function toggleMenu() {
+            menuSidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        }
+
+        menuToggle.addEventListener('click', toggleMenu);
+
+        overlay.addEventListener('click', toggleMenu);
+
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        if (sidebarToggle) {
+            const sidebar = document.querySelector('.sidebar');
+            if (sidebar) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('hidden');
+                    sidebarToggle.classList.toggle('active');
+                });
+            }
+        }
+
+        const searchMobileToggle = document.getElementById('searchMobileToggle');
+        const searchMobile = document.getElementById('searchMobile');
+
+        searchMobileToggle.addEventListener('click', function() {
+            if (searchMobile.style.display === 'none' || searchMobile.style.display === '') {
+                searchMobile.style.display = 'block';
+            } else {
+                searchMobile.style.display = 'none';
+            }
+        });
+    </script>
+    
+    <script>
+        // Sistema de Toast Notifications
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            let icon = 'check_circle';
+            if (type === 'error') icon = 'error';
+            else if (type === 'warning') icon = 'warning';
+            
+            toast.innerHTML = `
+              <div class="toast-icon">
+                <span class="material-icons">${icon}</span>
+              </div>
+              <div class="toast-content">
+                <div class="toast-message">${message}</div>
+              </div>
+              <button class="toast-close" onclick="removeToast(this.parentElement)">
+                <span class="material-icons">close</span>
+              </button>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Auto remove após 6 segundos
+            setTimeout(() => {
+                removeToast(toast);
+            }, 6000);
+        }
+        
+        function removeToast(toast) {
+            toast.classList.add('removing');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }
+        
+        // Exibe mensagens do Django
+        document.addEventListener('DOMContentLoaded', function() {
+            const messagesData = document.querySelector('.messages-data');
+            if (messagesData) {
+                const messages = messagesData.querySelectorAll('[data-message]');
+                messages.forEach((msg, index) => {
+                    setTimeout(() => {
+                        showToast(msg.dataset.message, msg.dataset.type);
+                    }, index * 150);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

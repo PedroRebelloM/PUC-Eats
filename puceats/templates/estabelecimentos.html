@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - PUC Eats{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/estabelecimentos.css' %}">
+{% endblock %}
+
+{% block search_placeholder %}Buscar {{ page_title|lower }}...{% endblock %}
+{% block search_placeholder_mobile %}Buscar {{ page_title|lower }}...{% endblock %}
+
+{% block nav_restaurantes %}{% if establishment_type == 'restaurante' %}active{% endif %}{% endblock %}
+{% block nav_lanchonetes %}{% if establishment_type == 'lanchonete' %}active{% endif %}{% endblock %}
+{% block nav_barracas %}{% if establishment_type == 'barraca' %}active{% endif %}{% endblock %}
+
+{% block content %}
+    <main class="page-content">
+        <div class="page-header">
+            <div class="header-icon-wrapper">
+                <span class="material-icons">{{ icon }}</span>
+            </div>
+            <div>
+                <h2 class="page-title">{{ page_title }}</h2>
+                <p class="page-description">{{ restaurants|length }} estabelecimento{{ restaurants|length|pluralize }} encontrado{{ restaurants|length|pluralize }}</p>
+            </div>
+        </div>
+
+        <section class="establishments-grid">
+            {% for restaurant in restaurants %}
+            <article class="establishment-card">
+                <div class="card-image">
+                    <div class="image-placeholder">
+                        <span class="material-icons placeholder-icon">{{ icon }}</span>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ restaurant.name }}</h3>
+                    </div>
+                    <p class="card-category">{{ restaurant.get_establishment_type_display }}</p>
+                    <div class="card-meta">
+                        <span class="material-icons meta-icon">lunch_dining</span>
+                        <span class="meta-text">{{ restaurant.dishes.count }} prato{{ restaurant.dishes.count|pluralize }}</span>
+                    </div>
+                </div>
+            </article>
+            {% empty %}
+            <div class="empty-state-full">
+                <span class="material-icons empty-icon">{{ icon }}</span>
+                <p class="empty-message">Nenhum estabelecimento encontrado</p>
+                <p class="empty-hint">Não há {{ page_title|lower }} cadastrados no momento</p>
+            </div>
+            {% endfor %}
+        </section>
+    </main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/script.js' %}"></script>
+{% endblock %}

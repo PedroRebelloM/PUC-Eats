@@ -63,6 +63,14 @@
                         </div>
                     </div>
                     <div class="d-flex align-items-center gap-2">
+                        {% if user.is_authenticated %}
+                        <div class="d-none d-md-flex align-items-center gap-2 me-2">
+                            <div class="d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background: linear-gradient(135deg, #9CCC65 0%, #8BC34A 100%); border-radius: 50%;">
+                                <span class="material-icons text-white" style="font-size: 20px;">person</span>
+                            </div>
+                            <span class="small fw-medium" style="color: #1f2937;">{{ user.first_name|default:user.username }}</span>
+                        </div>
+                        {% endif %}
                         <a href="{% url 'puceats:index' %}" class="btn btn-outline-secondary d-inline-flex align-items-center">
                             <span class="material-icons me-1" style="font-size: 18px;">arrow_back</span>
                             <span class="d-none d-md-inline">Voltar</span>
@@ -75,26 +83,83 @@
                             <span class="material-icons me-1" style="font-size: 18px;">add</span>
                             <span>Adicionar Prato</span>
                         </a>
+                        {% if user.is_authenticated %}
+                        <a href="{% url 'puceats:logout' %}" class="btn btn-outline-danger d-inline-flex align-items-center">
+                            <span class="material-icons me-1" style="font-size: 18px;">logout</span>
+                            <span class="d-none d-md-inline">Sair</span>
+                        </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
         </header>
 
+        <!-- Toast Container -->
+        <div id="toast-container" class="toast-container"></div>
+
+        {% if messages %}
+        <div class="messages-data" style="display: none;">
+          {% for message in messages %}
+          <div data-type="{{ message.tags }}" data-message="{{ message|escapejs }}"></div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
         <div class="container py-4 py-md-5">
 
-            <div class="card shadow-sm">
-                <div class="card-body">
+            <div class="card shadow-sm mb-4 border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: linear-gradient(135deg, #9CCC65 0%, #8BC34A 100%); border-radius: 12px;">
+                                <span class="material-icons text-white">restaurant</span>
+                            </div>
+                            <div>
+                                <h2 class="h5 mb-0 fw-bold" style="color: #1f2937;">Meus Restaurantes</h2>
+                                <p class="small text-muted mb-0">Selecione para gerenciar o cardápio</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-success d-inline-flex align-items-center" data-modal-target="#novoRestauranteModal">
+                            <span class="material-icons me-1" style="font-size: 18px;">add_business</span>
+                            <span class="d-none d-sm-inline">Novo Restaurante</span>
+                        </button>
+                    </div>
+                    <select class="form-select form-select-lg border-2" id="restaurantSelector" onchange="window.location.href='?restaurant_id='+this.value" style="border-color: #e5e7eb; border-radius: 12px; padding: 12px 16px;">
+                        {% for restaurant in restaurants %}
+                        <option value="{{ restaurant.id }}" {% if selected_restaurant.id == restaurant.id %}selected{% endif %}>
+                            {{ restaurant.name }} | {{ restaurant.get_establishment_type_display }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            {% if selected_restaurant %}
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h2 class="h5 mb-1 fw-bold" style="color: #1f2937;">Cardápio de {{ selected_restaurant.name }}</h2>
+                            <p class="small text-muted mb-0">{{ selected_restaurant.get_establishment_type_display }}</p>
+                        </div>
+                        <span class="badge" style="background: linear-gradient(135deg, #9CCC65 0%, #8BC34A 100%); font-size: 14px; padding: 8px 16px; border-radius: 20px;">{{ dishes|length }} prato{{ dishes|length|pluralize }}</span>
+                    </div>
                     
                     <div class="row g-3 mb-4">
                         <div class="col-12 col-md">
                             <div class="input-group">
                                 <span class="input-group-text bg-white"><span class="material-icons">search</span></span>
+                                <input type="text" class="form-control" placeholder="Pesquisar prato" id="searchInput" />
                                 <input type="text" class="form-control" id="searchInput" placeholder="Pesquisar prato" />
                             </div>
                         </div>
                         <div class="col-12 col-md-auto">
                             <select class="form-select" id="categoryFilter">
                                 <option value="">Todas as categorias</option>
+                                {% for dish in dishes %}
+                                    {% if dish.category %}
+                                    <option value="{{ dish.category.name }}">{{ dish.category.name }}</option>
+                                    {% endif %}
                                 {% for category in categories %}
                                 <option value="{{ category.id }}">{{ category.name }}</option>
                                 {% endfor %}
@@ -104,11 +169,15 @@
 
                     <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4" id="dishesContainer">
                         {% for dish in dishes %}
+                        <div class="col dish-item" data-category="{{ dish.category.name|default:'' }}" data-name="{{ dish.name|lower }}">
                         <div class="col dish-item" data-dish-id="{{ dish.id }}" data-category-id="{{ dish.category.id|default:'' }}" data-search="{{ dish.name|lower }} {{ dish.description|lower }}">
                             <div class="card h-100 hoverTransform overflow-hidden position-relative">
                                 {% if dish.image %}
                                 <img class="card-img-top" alt="{{ dish.name }}" src="{{ dish.image.url }}" />
                                 {% else %}
+                                <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 200px;">
+                                    <span class="material-icons text-white" style="font-size: 64px;">restaurant</span>
+                                </div>
                                 <img class="card-img-top" alt="{{ dish.name }}" src="https://via.placeholder.com/400x300?text={{ dish.name|urlencode }}" />
                                 {% endif %}
                                 {% if dish.category %}
@@ -117,6 +186,14 @@
                                 <div class="card-body">
                                     <h3 class="h5 card-title">{{ dish.name }}</h3>
                                     <p class="card-text text-secondary small">{{ dish.description|truncatewords:20 }}</p>
+                                    <p class="fw-bold text-success mb-2">R$ {{ dish.price }}</p>
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <a class="btn btn-sm btnEditar d-inline-flex align-items-center" href="#" data-dish-id="{{ dish.id }}">
+                                            <span class="material-icons me-1" style="font-size: 1rem;">edit</span>Editar
+                                        </a>
+                                        <a class="btn btn-sm btn-outline-danger d-inline-flex align-items-center" href="#" data-dish-id="{{ dish.id }}">
+                                            <span class="material-icons me-1" style="font-size: 1rem;">delete</span>Apagar
+                                        </a>
                                     <p class="text-success fw-bold mb-2">R$ {{ dish.price }}</p>
                                     <p class="text-muted small mb-3"><strong>Restaurante:</strong> {{ dish.restaurant.name }}</p>
                                     <div class="d-flex justify-content-end gap-2">
@@ -127,6 +204,20 @@
                             </div>
                         </div>
                         {% empty %}
+                        <div class="col-12 text-center py-5">
+                            <span class="material-icons text-muted mb-3" style="font-size: 64px;">restaurant_menu</span>
+                            <p class="text-muted">Nenhum prato cadastrado neste restaurante ainda.</p>
+                            <p class="text-muted small">Clique no botão "Adicionar" para criar o primeiro prato!</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="card shadow-sm border-0">
+                <div class="card-body text-center py-5">
+                    <div class="d-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px; background: linear-gradient(135deg, #9CCC65 0%, #8BC34A 100%); border-radius: 20px; margin: 0 auto;">
+                        <span class="material-icons text-white" style="font-size: 48px;">store</span>
                         <div class="col-12">
                             <div class="alert alert-info">
                                 <span class="material-icons" style="vertical-align: middle;">info</span>
@@ -135,10 +226,12 @@
                         </div>
                         {% endfor %}
                     </div>
+                    <h3 class="h5 mb-2" style="color: #1f2937;">Nenhum restaurante cadastrado</h3>
+                    <p class="text-muted">Crie sua conta de restaurante para começar!</p>
                 </div>
             </div>
+            {% endif %}
         </div>
-        <!-- Modal para Adicionar Item (CSS-only via :target) -->
         <div id="adicionarModal" class="modalContainer" aria-hidden="true">
             <div class="modalContent shadow-lg" role="dialog" aria-modal="true" aria-labelledby="tituloAdicionarItem">
                 <div class="modal-header-custom mb-4">
@@ -150,6 +243,17 @@
                         <span class="material-icons">close</span>
                     </button>
                 </div>
+                <form method="post" enctype="multipart/form-data" novalidate id="dishForm">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="campoRestaurante" class="form-label">Restaurante</label>
+                            <select class="form-select" id="campoRestaurante" name="restaurant_id" required>
+                                <option value="" selected disabled>Selecione o restaurante...</option>
+                                {% for restaurant in restaurants %}
+                                <option value="{{ restaurant.id }}" {% if selected_restaurant.id == restaurant.id %}selected{% endif %}>
+                                    {{ restaurant.name }}
+                                </option>
                 <form id="dishForm" method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     <input type="hidden" id="dishId" name="dish_id">
@@ -164,6 +268,8 @@
                             </select>
                         </div>
                         <div class="col-12">
+                            <label for="campoNome" class="form-label">Nome do prato</label>
+                            <input type="text" class="form-control" id="campoNome" name="nome" placeholder="Ex.: Obelix" required />
                             <label for="campoNome" class="form-label">Nome do prato *</label>
                             <input type="text" class="form-control" id="campoNome" name="name" placeholder="Ex.: Obelix" required />
                         </div>
@@ -173,6 +279,11 @@
                         </div>
                         <div class="col-12 col-md-6">
                             <label for="campoCategoria" class="form-label">Categoria</label>
+                            <select class="form-select" id="campoCategoria" name="categoria" required>
+                                <option value="" selected disabled>Selecione…</option>
+                                <option value="Burguer Steak">Burguer Steak</option>
+                                <option value="Vegeterian">Vegeterian</option>
+                                <option value="Brazilian">Brazilian</option>
                             <select class="form-select" id="campoCategoria" name="category">
                                 <option value="">Selecione…</option>
                                 {% for category in categories %}
@@ -188,6 +299,23 @@
                             </div>
                         </div>
                         <div class="col-12">
+                            <label class="form-label d-block">Imagem (Opcional)</label>
+                            <div class="btn-group" role="group" aria-label="Escolha de imagem">
+                                <input type="radio" class="btn-check" name="tipoImagem" id="tipoImagemNenhuma" value="nenhuma" checked data-image-choice>
+                                <label class="btn btn-outline-secondary" for="tipoImagemNenhuma">Nenhuma</label>
+                                <input type="radio" class="btn-check" name="tipoImagem" id="tipoImagemUrl" value="url" data-image-choice>
+                                <label class="btn btn-outline-secondary" for="tipoImagemUrl">URL</label>
+                                <input type="radio" class="btn-check" name="tipoImagem" id="tipoImagemUpload" value="upload" data-image-choice>
+                                <label class="btn btn-outline-secondary" for="tipoImagemUpload">Upload</label>
+                            </div>
+                        </div>
+                        <div class="col-12 d-none" id="grupoImagemUrl">
+                            <label for="campoImagemUrl" class="form-label">URL da imagem</label>
+                            <input type="url" class="form-control" id="campoImagemUrl" name="imagemUrl" placeholder="https://…" />
+                        </div>
+                        <div class="col-12 d-none" id="grupoImagemUpload">
+                            <label for="campoImagemUpload" class="form-label">Upload da imagem</label>
+                            <input type="file" class="form-control" id="campoImagemUpload" name="imagemArquivo" accept="image/*" />
                             <label for="campoImagem" class="form-label">Imagem</label>
                             <input type="file" class="form-control" id="campoImagem" name="image" accept="image/*" />
                         </div>
@@ -219,6 +347,114 @@
             
             <!-- A11y hint: Este modal é controlado por JavaScript. Feche com o botão Fechar, pela área externa ou com ESC. -->
         </div>
+
+        <!-- Modal Novo Restaurante -->
+        <div class="modalContainer" id="novoRestauranteModal" aria-hidden="true">
+            <div class="modalContent" role="dialog" aria-labelledby="tituloNovoRestaurante" aria-modal="true">
+                <div class="modalHeader">
+                    <h2 id="tituloNovoRestaurante" class="modalTitle">
+                        <span class="material-icons me-2">add_business</span>
+                        Criar Novo Restaurante
+                    </h2>
+                    <button type="button" class="btn-close-custom" aria-label="Fechar" data-modal-close>
+                        <span class="material-icons">close</span>
+                    </button>
+                </div>
+                <form method="post" action="{% url 'puceats:add_restaurant' %}" novalidate id="restaurantForm">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div class="alert alert-info d-flex align-items-start gap-2 mb-0">
+                                <span class="material-icons">info</span>
+                                <div>
+                                    <strong>Token necessário</strong>
+                                    <p class="small mb-0">Para criar um novo restaurante, você precisa de um token válido. Entre em contato com o administrador para obter um.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label for="campoToken" class="form-label">Token de Autorização</label>
+                            <input type="text" class="form-control" id="campoToken" name="token" placeholder="Digite o token" required />
+                        </div>
+                        <div class="col-12">
+                            <label for="campoNomeRestaurante" class="form-label">Nome do Restaurante</label>
+                            <input type="text" class="form-control" id="campoNomeRestaurante" name="nome_restaurante" placeholder="Ex.: Pizzaria Bella" required />
+                        </div>
+                        <div class="col-12">
+                            <label for="campoTipoEstabelecimento" class="form-label">Tipo de Estabelecimento</label>
+                            <select class="form-select" id="campoTipoEstabelecimento" name="establishment_type" required>
+                                <option value="" selected disabled>Selecione...</option>
+                                <option value="restaurante">Restaurante</option>
+                                <option value="lanchonete">Lanchonete</option>
+                                <option value="barraca">Barraca</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-outline-secondary btn-modal-cancel" data-modal-close>Cancelar</button>
+                        <button type="submit" class="btn btn-success btn-modal-submit">
+                            <span class="material-icons me-1" style="font-size: 18px;">check</span>
+                            Criar Restaurante
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="modalBackdrop" data-modal-close aria-hidden="true"></div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+        
+        <script>
+          // Sistema de Toast Notifications
+          function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            const icon = type === 'success' ? 'check_circle' : 'error';
+            
+            toast.innerHTML = `
+              <div class="toast-icon">
+                <span class="material-icons">${icon}</span>
+              </div>
+              <div class="toast-content">
+                <div class="toast-message">${message}</div>
+              </div>
+              <button class="toast-close" onclick="removeToast(this.parentElement)">
+                <span class="material-icons">close</span>
+              </button>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Auto remove após 6 segundos
+            setTimeout(() => {
+              removeToast(toast);
+            }, 6000);
+          }
+          
+          function removeToast(toast) {
+            toast.classList.add('removing');
+            setTimeout(() => {
+              toast.remove();
+            }, 300);
+          }
+          
+          // Exibe mensagens do Django
+          document.addEventListener('DOMContentLoaded', function() {
+            const messagesData = document.querySelector('.messages-data');
+            if (messagesData) {
+              const messages = messagesData.querySelectorAll('[data-message]');
+              messages.forEach((msg, index) => {
+                setTimeout(() => {
+                  showToast(msg.dataset.message, msg.dataset.type);
+                }, index * 150);
+              });
+            }
+          });
+        </script>
+        
         <script src="{% static 'js/app.js' %}"></script>
         <script>
             // Dados dos pratos em JSON para edição

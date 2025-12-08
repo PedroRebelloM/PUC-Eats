@@ -1,95 +1,17 @@
+{% extends 'base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PUC Eats</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-</head>
-<body>
-    <aside class="menu-sidebar" id="menuSidebar">
-        <header class="menu-header">
-            <h1 class="brand">PUC <span>Eats</span></h1>
-        </header>
 
-        <nav class="nav">
-            <a href="#" class="item active">
-                <span class="material-icons">home</span>
-                <span>Tela Inicial</span>
-            </a>
-            <a href="#" class="item">
-                <span class="material-icons">restaurant</span>
-                <span>Restaurantes</span>
-            </a>
-            <a href="#" class="item">
-                <span class="material-icons">lunch_dining</span>
-                <span>Lanchonetes</span>
-            </a>
-            <a href="#" class="item">
-                <span class="material-icons">storefront</span>
-                <span>Barracas</span>
-            </a>
-            <a href="{% url 'puceats:favoritos' %}" class="item">
-                <span class="material-icons">favorite_border</span>
-                <span>Favoritos</span>
-            </a>
-        </nav>
+{% block title %}PUC Eats{% endblock %}
 
-        <footer class="menu-footer">
-            <a href="{% url 'puceats:login' %}" class="item">
-                <span class="material-icons">store</span>
-                <span>Conta restaurante</span>
-            </a>
-            <a href="#" class="item">
-                <span class="material-icons">settings</span>
-                <span>Configurações</span>
-            </a>
-        </footer>
-    </aside>
-    
-    <div class="overlay" id="overlay"></div>
-    <header class="modern-header">
-        <div class="header-container">
-            <div class="header-left">
-                <div class="logo-wrapper">
-                    <div class="logo-icon">
-                        <span class="material-icons">place</span>
-                    </div>
-                    <h1 class="logo-text">PUC <span class="logo-accent">Eats</span></h1>
-                </div>
-            </div>
+{% block nav_index %}active{% endblock %}
 
-            <div class="header-center">
-                <div class="search-wrapper">
-                    <span class="material-icons search-icon-left">search</span>
-                    <input type="text" class="search-input" placeholder="Buscar restaurantes, pratos...">
-                </div>
-            </div>
+{% block header_extra_buttons %}
+<button class="icon-btn" id="sidebarToggle">
+    <span class="material-icons">chevron_left</span>
+</button>
+{% endblock %}
 
-            <div class="header-right">
-                <button class="icon-btn search-mobile-btn" id="searchMobileToggle">
-                    <span class="material-icons">search</span>
-                </button>
-                <button class="icon-btn" id="menuToggle">
-                    <span class="material-icons">menu</span>
-                </button>
-                <button class="icon-btn" id="sidebarToggle">
-                    <span class="material-icons">chevron_left</span>
-                </button>
-            </div>
-        </div>
-
-        <div class="search-mobile" id="searchMobile">
-            <div class="search-wrapper">
-                <span class="material-icons search-icon-left">search</span>
-                <input type="text" class="search-input" placeholder="Buscar restaurantes, pratos...">
-            </div>
-        </div>
-    </header>
-    
+{% block content %}
     <div class="main-container">
         <div id="map"></div>
 
@@ -102,6 +24,26 @@
 
             <div class="restaurant-list">
                 {% for restaurant in restaurants %}
+                <div class="restaurant-item">
+                    <div class="restaurant-image">
+                        {% if restaurant.logo %}
+                        <img src="{{ restaurant.logo.url }}" alt="{{ restaurant.name }}">
+                        {% else %}
+                        <div class="restaurant-placeholder">
+                            <span class="material-icons">restaurant</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="restaurant-info">
+                        <h3 class="restaurant-name">{{ restaurant.name }}</h3>
+                        <p class="restaurant-location">{{ restaurant.building|default:"Campus PUC" }}</p>
+                        <p class="restaurant-cuisine">{{ restaurant.get_cuisine_type_display }}</p>
+                    </div>
+                </div>
+                {% empty %}
+                <p style="text-align: center; color: #666; padding: 20px;">
+                    Nenhum restaurante cadastrado ainda.
+                </p>
                     <div class="restaurant-item">
                         <div class="restaurant-icon">🍽️</div>
 
@@ -131,9 +73,10 @@
             </div>
         </aside>
     </div>
+{% endblock %}
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
+{% block extra_scripts %}
+<script>
         const pucRio = [-22.9794, -43.2329];
         
         const map = L.map('map', {
@@ -162,36 +105,5 @@
         L.marker(pucRio, {icon: customIcon}).addTo(map)
             .bindPopup('PUC-Rio');
 
-        const menuToggle = document.getElementById('menuToggle');
-        const menuSidebar = document.getElementById('menuSidebar');
-        const overlay = document.getElementById('overlay');
-
-        function toggleMenu() {
-            menuSidebar.classList.toggle('open');
-            overlay.classList.toggle('active');
-        }
-
-        menuToggle.addEventListener('click', toggleMenu);
-        overlay.addEventListener('click', toggleMenu);
-
-        const sidebarToggle = document.getElementById('sidebarToggle');
-        const sidebar = document.querySelector('.sidebar');
-
-        sidebarToggle.addEventListener('click', function() {
-            sidebar.classList.toggle('hidden');
-            sidebarToggle.classList.toggle('active');
-        });
-
-        const searchMobileToggle = document.getElementById('searchMobileToggle');
-        const searchMobile = document.getElementById('searchMobile');
-
-        searchMobileToggle.addEventListener('click', function() {
-            if (searchMobile.style.display === 'none' || searchMobile.style.display === '') {
-                searchMobile.style.display = 'block';
-            } else {
-                searchMobile.style.display = 'none';
-            }
-        });
-    </script>
-</body>
-</html>
+</script>
+{% endblock %}

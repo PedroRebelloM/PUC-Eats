@@ -1,5 +1,50 @@
 from django.db import models
 from django.utils.text import slugify
+from django.contrib.auth.models import User
+from django.utils import timezone
+from datetime import timedelta
+import secrets
+
+
+class Token(models.Model):
+    code = models.CharField(max_length=32, unique=True, editable=False)
+    is_used = models.BooleanField(default=False, verbose_name="Já foi usado?")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Criado em")
+    expires_at = models.DateTimeField(verbose_name="Expira em")
+    used_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name="tokens_used",
+        verbose_name="Usado por"
+    )
+    used_at = models.DateTimeField(null=True, blank=True, verbose_name="Usado em")
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Token"
+        verbose_name_plural = "Tokens"
+
+    def __str__(self):
+        status = "Usado" if self.is_used else "Disponível"
+        return f"{self.code} - {status}"
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            # Gerar código alfanumérico sem caracteres especiais
+            self.code = secrets.token_hex(16).upper()[:32]
+        if not self.expires_at:
+            self.expires_at = timezone.now() + timedelta(days=30)
+        super().save(*args, **kwargs)
+
+    def is_valid(self):
+        """Verifica se o token pode ser usado"""
+        if self.is_used:
+            return False, "Token já foi utilizado"
+        if timezone.now() > self.expires_at:
+            return False, "Token expirado"
+        return True, "Token válido"
 
 
 class Restaurant(models.Model):
@@ -15,11 +60,35 @@ class Restaurant(models.Model):
         ("outros", "Outros"),
     ]
 
+    ESTABLISHMENT_TYPES = [
+        ("restaurante", "Restaurante"),
+        ("lanchonete", "Lanchonete"),
+        ("barraca", "Barraca"),
+    ]
+
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="restaurants",
+        null=True,
+        blank=True,
+        verbose_name="Proprietário"
+    )
+
+    name = models.CharField(max_length=120, unique=True)
     name = models.CharField(max_length=120, unique=True, verbose_name="Nome")
     slug = models.SlugField(unique=True, blank=True)
 
     logo = models.ImageField(upload_to="restaurantes/logos/", blank=True, null=True, verbose_name="Logo")
 
+    description = models.TextField(blank=True, help_text="Descrição curta do restaurante")
+    cuisine_type = models.CharField(max_length=30, choices=CUISINE_TYPES, default="outros")
+    establishment_type = models.CharField(
+        max_length=20,
+        choices=ESTABLISHMENT_TYPES,
+        default="restaurante",
+        verbose_name="Tipo de Estabelecimento"
+    )
     description = models.TextField(blank=True, verbose_name="Descrição", help_text="Descrição curta do restaurante")
     cuisine_type = models.CharField(max_length=30, choices=CUISINE_TYPES, default="outros", verbose_name="Tipo de Cozinha")
 

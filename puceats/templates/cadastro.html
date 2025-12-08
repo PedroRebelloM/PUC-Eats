@@ -23,15 +23,39 @@
       <div class="auth-content">
         <div class="welcome-section">
           <h2 class="welcome-title">Criar sua conta</h2>
-          <p class="welcome-subtitle">Cadastre-se para começar a usar o PUC Eats</p>
+          <p class="welcome-subtitle">Cadastre seu restaurante no PUC Eats</p>
         </div>
 
-        <form class="auth-form">
+        {% if messages %}
+        <div class="messages">
+          {% for message in messages %}
+          <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post" class="auth-form">
+          {% csrf_token %}
+          <div class="form-group">
+            <label for="token" class="form-label">Token de Autorização</label>
+            <input 
+              type="text" 
+              id="token" 
+              name="token"
+              class="form-input" 
+              placeholder="Seu token para abertura de restaurante" 
+              required
+            >
+          </div>
+
           <div class="form-group">
             <label for="nome" class="form-label">Nome Completo</label>
             <input 
               type="text" 
               id="nome" 
+              name="nome"
               class="form-input" 
               placeholder="Seu nome completo" 
               required
@@ -39,23 +63,25 @@
           </div>
 
           <div class="form-group">
-            <label for="email" class="form-label">Email Institucional</label>
+            <label for="email" class="form-label">Email</label>
             <input 
               type="email" 
               id="email" 
+              name="email"
               class="form-input" 
-              placeholder="seu.email@puc-rio.br" 
+              placeholder="seu.email@dominio.com" 
               required
             >
           </div>
 
           <div class="form-group">
-            <label for="matricula" class="form-label">Matrícula</label>
+            <label for="nome_restaurante" class="form-label">Nome do Restaurante</label>
             <input 
               type="text" 
-              id="matricula" 
+              id="nome_restaurante" 
+              name="nome_restaurante"
               class="form-input" 
-              placeholder="Sua matrícula" 
+              placeholder="Nome do seu estabelecimento" 
               required
             >
           </div>
@@ -66,6 +92,7 @@
               <input 
                 type="password" 
                 id="senha" 
+                name="senha"
                 class="form-input" 
                 placeholder="Crie uma senha" 
                 required
@@ -77,6 +104,7 @@
               <input 
                 type="password" 
                 id="confirmar" 
+                name="confirmar"
                 class="form-input" 
                 placeholder="Confirme sua senha" 
                 required
@@ -92,21 +120,7 @@
           </div>
 
           <button type="submit" class="btn btn-primary">
-            Criar Conta
-          </button>
-
-          <div class="divider">
-            <span>ou cadastre-se com</span>
-          </div>
-
-          <button type="button" class="btn btn-outline">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
-              <path d="M9.003 18c2.43 0 4.467-.806 5.956-2.18L12.05 13.56c-.806.54-1.836.86-3.047.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9.003 18z" fill="#34A853"/>
-              <path d="M3.964 10.712c-.18-.54-.282-1.117-.282-1.71 0-.593.102-1.17.282-1.71V4.96H.957C.347 6.175 0 7.55 0 9.002c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
-              <path d="M9.003 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.464.891 11.426 0 9.003 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29c.708-2.127 2.692-3.71 5.036-3.71z" fill="#EA4335"/>
-            </svg>
-            Cadastrar com Google
+            Criar Conta e Restaurante
           </button>
 
           <div class="auth-footer">
