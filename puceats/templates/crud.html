@@ -149,17 +149,12 @@
                         <div class="col-12 col-md">
                             <div class="input-group">
                                 <span class="input-group-text bg-white"><span class="material-icons">search</span></span>
-                                <input type="text" class="form-control" placeholder="Pesquisar prato" id="searchInput" />
                                 <input type="text" class="form-control" id="searchInput" placeholder="Pesquisar prato" />
                             </div>
                         </div>
                         <div class="col-12 col-md-auto">
                             <select class="form-select" id="categoryFilter">
                                 <option value="">Todas as categorias</option>
-                                {% for dish in dishes %}
-                                    {% if dish.category %}
-                                    <option value="{{ dish.category.name }}">{{ dish.category.name }}</option>
-                                    {% endif %}
                                 {% for category in categories %}
                                 <option value="{{ category.id }}">{{ category.name }}</option>
                                 {% endfor %}
@@ -169,7 +164,6 @@
 
                     <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4" id="dishesContainer">
                         {% for dish in dishes %}
-                        <div class="col dish-item" data-category="{{ dish.category.name|default:'' }}" data-name="{{ dish.name|lower }}">
                         <div class="col dish-item" data-dish-id="{{ dish.id }}" data-category-id="{{ dish.category.id|default:'' }}" data-search="{{ dish.name|lower }} {{ dish.description|lower }}">
                             <div class="card h-100 hoverTransform overflow-hidden position-relative">
                                 {% if dish.image %}
@@ -178,7 +172,6 @@
                                 <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 200px;">
                                     <span class="material-icons text-white" style="font-size: 64px;">restaurant</span>
                                 </div>
-                                <img class="card-img-top" alt="{{ dish.name }}" src="https://via.placeholder.com/400x300?text={{ dish.name|urlencode }}" />
                                 {% endif %}
                                 {% if dish.category %}
                                 <span class="badge text-bg-dark badgeOverlay">{{ dish.category.name }}</span>
@@ -186,19 +179,15 @@
                                 <div class="card-body">
                                     <h3 class="h5 card-title">{{ dish.name }}</h3>
                                     <p class="card-text text-secondary small">{{ dish.description|truncatewords:20 }}</p>
-                                    <p class="fw-bold text-success mb-2">R$ {{ dish.price }}</p>
-                                    <div class="d-flex justify-content-end gap-2">
-                                        <a class="btn btn-sm btnEditar d-inline-flex align-items-center" href="#" data-dish-id="{{ dish.id }}">
-                                            <span class="material-icons me-1" style="font-size: 1rem;">edit</span>Editar
-                                        </a>
-                                        <a class="btn btn-sm btn-outline-danger d-inline-flex align-items-center" href="#" data-dish-id="{{ dish.id }}">
-                                            <span class="material-icons me-1" style="font-size: 1rem;">delete</span>Apagar
-                                        </a>
                                     <p class="text-success fw-bold mb-2">R$ {{ dish.price }}</p>
                                     <p class="text-muted small mb-3"><strong>Restaurante:</strong> {{ dish.restaurant.name }}</p>
                                     <div class="d-flex justify-content-end gap-2">
-                                        <button class="btn btn-sm btnEditar d-inline-flex align-items-center" onclick="editDish({{ dish.id }})"><span class="material-icons me-1" style="font-size: 1rem;">edit</span>Editar</button>
-                                        <button class="btn btn-sm btn-outline-danger d-inline-flex align-items-center" onclick="deleteDish({{ dish.id }}, '{{ dish.name|escapejs }}')"><span class="material-icons me-1" style="font-size: 1rem;">delete</span>Apagar</button>
+                                        <button class="btn btn-sm btnEditar d-inline-flex align-items-center" onclick="editDish({{ dish.id }})">
+                                            <span class="material-icons me-1" style="font-size: 1rem;">edit</span>Editar
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger d-inline-flex align-items-center" onclick="deleteDish({{ dish.id }}, '{{ dish.name|escapejs }}')">
+                                            <span class="material-icons me-1" style="font-size: 1rem;">delete</span>Apagar
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -218,13 +207,6 @@
                 <div class="card-body text-center py-5">
                     <div class="d-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px; background: linear-gradient(135deg, #9CCC65 0%, #8BC34A 100%); border-radius: 20px; margin: 0 auto;">
                         <span class="material-icons text-white" style="font-size: 48px;">store</span>
-                        <div class="col-12">
-                            <div class="alert alert-info">
-                                <span class="material-icons" style="vertical-align: middle;">info</span>
-                                Nenhum prato cadastrado ainda. Clique em "Adicionar Prato" para começar.
-                            </div>
-                        </div>
-                        {% endfor %}
                     </div>
                     <h3 class="h5 mb-2" style="color: #1f2937;">Nenhum restaurante cadastrado</h3>
                     <p class="text-muted">Crie sua conta de restaurante para começar!</p>
@@ -243,17 +225,6 @@
                         <span class="material-icons">close</span>
                     </button>
                 </div>
-                <form method="post" enctype="multipart/form-data" novalidate id="dishForm">
-                    {% csrf_token %}
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label for="campoRestaurante" class="form-label">Restaurante</label>
-                            <select class="form-select" id="campoRestaurante" name="restaurant_id" required>
-                                <option value="" selected disabled>Selecione o restaurante...</option>
-                                {% for restaurant in restaurants %}
-                                <option value="{{ restaurant.id }}" {% if selected_restaurant.id == restaurant.id %}selected{% endif %}>
-                                    {{ restaurant.name }}
-                                </option>
                 <form id="dishForm" method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     <input type="hidden" id="dishId" name="dish_id">
@@ -263,13 +234,11 @@
                             <select class="form-select" id="campoRestaurante" name="restaurant" required>
                                 <option value="" selected disabled>Selecione o restaurante…</option>
                                 {% for restaurant in restaurants %}
-                                <option value="{{ restaurant.id }}">{{ restaurant.name }}</option>
+                                <option value="{{ restaurant.id }}" {% if selected_restaurant and selected_restaurant.id == restaurant.id %}selected{% endif %}>{{ restaurant.name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                         <div class="col-12">
-                            <label for="campoNome" class="form-label">Nome do prato</label>
-                            <input type="text" class="form-control" id="campoNome" name="nome" placeholder="Ex.: Obelix" required />
                             <label for="campoNome" class="form-label">Nome do prato *</label>
                             <input type="text" class="form-control" id="campoNome" name="name" placeholder="Ex.: Obelix" required />
                         </div>
@@ -279,11 +248,6 @@
                         </div>
                         <div class="col-12 col-md-6">
                             <label for="campoCategoria" class="form-label">Categoria</label>
-                            <select class="form-select" id="campoCategoria" name="categoria" required>
-                                <option value="" selected disabled>Selecione…</option>
-                                <option value="Burguer Steak">Burguer Steak</option>
-                                <option value="Vegeterian">Vegeterian</option>
-                                <option value="Brazilian">Brazilian</option>
                             <select class="form-select" id="campoCategoria" name="category">
                                 <option value="">Selecione…</option>
                                 {% for category in categories %}
@@ -314,9 +278,7 @@
                             <input type="url" class="form-control" id="campoImagemUrl" name="imagemUrl" placeholder="https://…" />
                         </div>
                         <div class="col-12 d-none" id="grupoImagemUpload">
-                            <label for="campoImagemUpload" class="form-label">Upload da imagem</label>
-                            <input type="file" class="form-control" id="campoImagemUpload" name="imagemArquivo" accept="image/*" />
-                            <label for="campoImagem" class="form-label">Imagem</label>
+                            <label for="campoImagem" class="form-label">Upload da imagem</label>
                             <input type="file" class="form-control" id="campoImagem" name="image" accept="image/*" />
                         </div>
                         <div class="col-12">
