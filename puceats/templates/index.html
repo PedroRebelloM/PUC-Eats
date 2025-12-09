@@ -15,7 +15,6 @@
     <div class="main-container">
         <div id="map"></div>
 
-        <!-- Lateral com scroll e restaurantes do banco -->
         <aside class="sidebar" style="overflow-y: auto;">
             <div class="sidebar-header">
                 <h2>Restaurantes</h2>
@@ -320,11 +319,12 @@
             modalTitle.textContent = dish.name;
 
             let html = `
-                ${dish.image ? `
-                    <div class="dish-detail-image-container">
-                        <img src="${dish.image}" alt="${dish.name}" class="dish-detail-image">
-                    </div>
-                ` : ''}
+                <div class="dish-detail-image-container">
+                    ${dish.image ? 
+                        `<img src="${dish.image}" alt="${dish.name}" class="dish-detail-image">` : 
+                        `<div class="dish-no-image" style="height: 300px;"><span class="material-icons">restaurant</span></div>`
+                    }
+                </div>
 
                 <div class="dish-detail-price">R$ ${parseFloat(dish.price).toFixed(2)}</div>
 
