@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from .models import Token, Restaurant, Dish, Category
 import requests
 
@@ -62,11 +63,8 @@ def index(request):
     restaurants = Restaurant.objects.all()
     return render(request, 'index.html', {"restaurants": restaurants})
 
+@ensure_csrf_cookie
 def login(request):
-    # Se já está logado, faz logout primeiro para evitar sessões antigas
-    if request.user.is_authenticated:
-        auth_logout(request)
-    
     if request.method == 'POST':
         email_ou_username = request.POST.get('email', '').strip()
         senha = request.POST.get('senha', '')
@@ -87,9 +85,6 @@ def login(request):
                 pass
         
         if usuario is not None:
-            # Faz logout de qualquer sessão anterior antes de logar
-            auth_logout(request)
-            # Agora faz login com o usuário correto
             auth_login(request, usuario)
             nome_exibir = usuario.first_name if usuario.first_name else usuario.username
             messages.success(request, f'Bem-vindo de volta, {nome_exibir}! Login realizado com sucesso.')
@@ -99,6 +94,7 @@ def login(request):
     
     return render(request, 'login.html')
 
+@ensure_csrf_cookie
 def cadastro(request):
     if request.method == 'POST':
         token_code = request.POST.get('token')
@@ -471,30 +467,62 @@ def dish_edit(request, dish_id):
     try:
         dish = get_object_or_404(Dish, id=dish_id)
         
-        dish.name = request.POST.get('name', dish.name)
-        dish.description = request.POST.get('description', dish.description)
-        dish.price = request.POST.get('price', dish.price)
+        # Validar dados obrigatórios
+        name = request.POST.get('name', '').strip()
+        price = request.POST.get('price', '').strip()
+        restaurant_id = request.POST.get('restaurant', '').strip()
         
-        category_id = request.POST.get('category')
+        if not name:
+            return JsonResponse({'success': False, 'error': 'Nome é obrigatório'})
+        
+        if not price:
+            return JsonResponse({'success': False, 'error': 'Preço é obrigatório'})
+            
+        if not restaurant_id:
+            return JsonResponse({'success': False, 'error': 'Restaurante é obrigatório'})
+        
+        # Atualizar campos
+        dish.name = name
+        dish.description = request.POST.get('description', '').strip()
+        
+        try:
+            dish.price = float(price)
+            if dish.price < 0:
+                return JsonResponse({'success': False, 'error': 'Preço não pode ser negativo'})
+        except (ValueError, TypeError):
+            return JsonResponse({'success': False, 'error': 'Preço inválido'})
+        
+        # Restaurante
+        try:
+            restaurant = Restaurant.objects.get(id=int(restaurant_id))
+            dish.restaurant = restaurant
+        except (Restaurant.DoesNotExist, ValueError, TypeError):
+            return JsonResponse({'success': False, 'error': 'Restaurante inválido'})
+        
+        # Categoria (opcional)
+        category_id = request.POST.get('category', '').strip()
         if category_id:
-            dish.category_id = category_id
+            try:
+                dish.category_id = int(category_id)
+            except (ValueError, TypeError):
+                dish.category = None
+        else:
+            dish.category = None
         
-        restaurant_id = request.POST.get('restaurant')
-        if restaurant_id:
-            dish.restaurant_id = restaurant_id
-        
+        # Checkboxes
         dish.is_vegan = request.POST.get('is_vegan') == 'on'
         dish.is_vegetarian = request.POST.get('is_vegetarian') == 'on'
         dish.is_gluten_free = request.POST.get('is_gluten_free') == 'on'
         
+        # Imagem (se houver upload)
         if 'image' in request.FILES:
             dish.image = request.FILES['image']
         
         dish.save()
         
-        return JsonResponse({'success': True})
+        return JsonResponse({'success': True, 'message': 'Prato atualizado com sucesso'})
     except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)})
+        return JsonResponse({'success': False, 'error': f'Erro ao salvar: {str(e)}'})
 
 @require_http_methods(["POST"])
 def dish_delete(request, dish_id):
