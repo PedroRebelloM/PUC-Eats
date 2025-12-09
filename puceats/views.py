@@ -21,6 +21,44 @@ def index(request):
     }
     return render(request, 'index.html', context)
 
+def get_restaurant_menu(request, restaurant_id):
+    """API endpoint para buscar cardápio do restaurante"""
+    try:
+        restaurant = Restaurant.objects.get(id=restaurant_id)
+        dishes = Dish.objects.filter(restaurant=restaurant).select_related('category')
+        
+        dishes_data = []
+        for dish in dishes:
+            dishes_data.append({
+                'id': dish.id,
+                'name': dish.name,
+                'description': dish.description,
+                'price': str(dish.price),
+                'image': dish.image.url if dish.image else None,
+                'category': dish.category.name if dish.category else None,
+                'is_vegan': dish.is_vegan,
+                'is_vegetarian': dish.is_vegetarian,
+                'is_gluten_free': dish.is_gluten_free,
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'restaurant': {
+                'id': restaurant.id,
+                'name': restaurant.name,
+                'logo': restaurant.logo.url if restaurant.logo else None,
+                'establishment_type': restaurant.get_establishment_type_display(),
+                'cuisine_type': restaurant.get_cuisine_type_display(),
+                'building': restaurant.building,
+                'description': restaurant.description,
+            },
+            'dishes': dishes_data
+        })
+    except Restaurant.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Restaurante não encontrado'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
 def restaurantes_view(request):
     restaurantes = Restaurant.objects.filter(establishment_type='restaurante').prefetch_related('dishes')
     

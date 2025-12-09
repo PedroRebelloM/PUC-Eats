@@ -24,7 +24,7 @@
 
             <div class="restaurant-list">
                 {% for restaurant in restaurants %}
-                <div class="restaurant-item">
+                <div class="restaurant-item" onclick="openRestaurantModal({{ restaurant.id }})">
                     <div class="restaurant-image">
                         {% if restaurant.logo %}
                         <img src="{{ restaurant.logo.url }}" alt="{{ restaurant.name }}">
@@ -79,6 +79,12 @@
 
         L.marker(pucRio, {icon: customIcon}).addTo(map)
             .bindPopup('PUC-Rio');
+
+        // Função para abrir modal do restaurante
+        function openRestaurantModal(restaurantId) {
+            console.log('Abrindo modal do restaurante:', restaurantId);
+            alert('Modal do restaurante ' + restaurantId + ' será implementado');
+        }
 
 </script>
 {% endblock %}
