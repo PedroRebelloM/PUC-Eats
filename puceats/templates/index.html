@@ -48,6 +48,21 @@
             </div>
         </aside>
     </div>
+
+    <!-- Modal do Cardápio do Restaurante -->
+    <div id="restaurantModal" class="restaurant-modal-overlay">
+        <div class="restaurant-modal-content">
+            <div class="restaurant-modal-header">
+                <h2 id="modalRestaurantName">Carregando...</h2>
+                <button class="restaurant-modal-close" onclick="closeRestaurantModal()">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="restaurant-modal-body" id="modalRestaurantBody">
+                <p style="text-align: center; padding: 20px;">Carregando cardápio...</p>
+            </div>
+        </div>
+    </div>
 {% endblock %}
 
 {% block extra_scripts %}
@@ -80,10 +95,9 @@
         L.marker(pucRio, {icon: customIcon}).addTo(map)
             .bindPopup('PUC-Rio');
 
-        // Função para abrir modal do restaurante
         function openRestaurantModal(restaurantId) {
-            console.log('Abrindo modal do restaurante:', restaurantId);
-            alert('Modal do restaurante ' + restaurantId + ' será implementado');
+            console.log('Teste', restaurantId);
+           
         }
 
 </script>
