@@ -162,7 +162,10 @@
                         data.dishes.forEach(dish => {
                             html += `
                                 <div class="dish-card">
-                                    ${dish.image ? `<img src="${dish.image}" alt="${dish.name}" class="dish-image">` : ''}
+                                    ${dish.image ? 
+                                        `<img src="${dish.image}" alt="${dish.name}" class="dish-image">` : 
+                                        `<div class="dish-no-image"><span class="material-icons">restaurant</span></div>`
+                                    }
                                     <div class="dish-info">
                                         <h4 class="dish-name">${dish.name}</h4>
                                         ${dish.description ? `<p class="dish-description">${dish.description}</p>` : ''}
