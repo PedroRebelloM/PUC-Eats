@@ -62,6 +62,20 @@
             </div>
         </div>
     </div>
+
+    <div id="dishDetailModal" class="dish-detail-overlay">
+        <div class="dish-detail-content">
+            <div class="dish-detail-header">
+                <h2 id="dishDetailName">Carregando...</h2>
+                <button class="dish-detail-close" onclick="closeDishDetailModal()">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="dish-detail-body" id="dishDetailBody">
+                <p style="text-align: center; padding: 20px;">Carregando detalhes...</p>
+            </div>
+        </div>
+    </div>
 {% endblock %}
 
 {% block extra_scripts %}
