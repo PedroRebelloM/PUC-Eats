@@ -169,10 +169,8 @@
                             </div>
                         `;
                         
-                        // Extrair categorias únicas
                         const categories = [...new Set(data.dishes.map(dish => dish.category).filter(Boolean))];
                         
-                        // Adicionar filtros de categoria (só se houver categorias)
                         if (categories.length > 0) {
                             html += '<div class="category-filters">';
                             html += '<button class="category-filter-btn active" data-category="all">Todos</button>';
