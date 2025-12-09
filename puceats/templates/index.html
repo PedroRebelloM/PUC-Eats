@@ -15,7 +15,6 @@
     <div class="main-container">
         <div id="map"></div>
 
-        <!-- Lateral com scroll e restaurantes do banco -->
         <aside class="sidebar" style="overflow-y: auto;">
             <div class="sidebar-header">
                 <h2>Restaurantes</h2>
@@ -24,7 +23,7 @@
 
             <div class="restaurant-list">
                 {% for restaurant in restaurants %}
-                <div class="restaurant-item">
+                <div class="restaurant-item" onclick="openRestaurantModal({{ restaurant.id }})">
                     <div class="restaurant-image">
                         {% if restaurant.logo %}
                         <img src="{{ restaurant.logo.url }}" alt="{{ restaurant.name }}">
@@ -47,6 +46,34 @@
                 {% endfor %}
             </div>
         </aside>
+    </div>
+
+    <div id="restaurantModal" class="restaurant-modal-overlay">
+        <div class="restaurant-modal-content">
+            <div class="restaurant-modal-header">
+                <h2 id="modalRestaurantName">Carregando...</h2>
+                <button class="restaurant-modal-close" onclick="closeRestaurantModal()">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="restaurant-modal-body" id="modalRestaurantBody">
+                <p style="text-align: center; padding: 20px;">Carregando cardápio...</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="dishDetailModal" class="dish-detail-overlay">
+        <div class="dish-detail-content">
+            <div class="dish-detail-header">
+                <h2 id="dishDetailName">Carregando...</h2>
+                <button class="dish-detail-close" onclick="closeDishDetailModal()">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="dish-detail-body" id="dishDetailBody">
+                <p style="text-align: center; padding: 20px;">Carregando detalhes...</p>
+            </div>
+        </div>
     </div>
 {% endblock %}
 
@@ -79,6 +106,278 @@
 
         L.marker(pucRio, {icon: customIcon}).addTo(map)
             .bindPopup('PUC-Rio');
+
+        function openRestaurantModal(restaurantId) {
+            const modal = document.getElementById('restaurantModal');
+            const modalTitle = document.getElementById('modalRestaurantName');
+            const modalBody = document.getElementById('modalRestaurantBody');
+            
+            // Mostrar loading
+            modalTitle.textContent = 'Carregando...';
+            modalBody.innerHTML = '<div style="text-align: center; padding: 40px;"><p>Carregando cardápio...</p></div>';
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            
+            // Buscar dados do restaurante
+            fetch(`/puceats/api/restaurante/${restaurantId}/menu/`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Erro ao carregar cardápio');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Armazenar dados dos pratos globalmente
+                    allDishesData = data.dishes || [];
+                    
+                    // Atualizar título
+                    modalTitle.textContent = data.name;
+                    
+                    // Renderizar informações do restaurante
+                    let html = `
+                        <div class="restaurant-modal-info">
+                            ${data.logo ? `<img src="${data.logo}" alt="${data.name}" class="restaurant-modal-logo">` : ''}
+                            <div class="restaurant-modal-details">
+                                <h3>${data.name}</h3>
+                                <div class="restaurant-tags">
+                                    ${data.establishment_type ? `<span class="restaurant-tag">${data.establishment_type}</span>` : ''}
+                                    ${data.cuisine_type ? `<span class="restaurant-tag">${data.cuisine_type}</span>` : ''}
+                                </div>
+                                <div class="restaurant-info-grid">
+                                    ${data.building ? `
+                                        <div class="restaurant-info-line">
+                                            <span class="material-icons">location_on</span>
+                                            <strong>Prédio:</strong>
+                                            <span>${data.building}</span>
+                                        </div>
+                                    ` : ''}
+                                    ${data.opening_hours ? `
+                                        <div class="restaurant-info-line">
+                                            <span class="material-icons">schedule</span>
+                                            <strong>Horário:</strong>
+                                            <span>${data.opening_hours}</span>
+                                        </div>
+                                    ` : ''}
+                                    ${data.phone ? `
+                                        <div class="restaurant-info-line">
+                                            <span class="material-icons">phone</span>
+                                            <strong>Telefone:</strong>
+                                            <span>${data.phone}</span>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                                ${data.description ? `<div class="restaurant-description">${data.description}</div>` : ''}
+                            </div>
+                        </div>
+                        
+                        <h3 style="margin-bottom: 16px; color: #333; font-size: 20px;">Cardápio</h3>
+                    `;
+                    
+                    if (data.dishes && data.dishes.length > 0) {
+                        // Adicionar barra de busca
+                        html += `
+                            <div class="dish-search-container">
+                                <input type="text" 
+                                       class="dish-search-input" 
+                                       id="dishSearchInput"
+                                       placeholder="Buscar pratos por nome ou descrição...">
+                                <span class="material-icons dish-search-icon">search</span>
+                            </div>
+                        `;
+                        
+                        const categories = [...new Set(data.dishes.map(dish => dish.category).filter(Boolean))];
+                        
+                        if (categories.length > 0) {
+                            html += '<div class="category-filters">';
+                            html += '<button class="category-filter-btn active" data-category="all">Todos</button>';
+                            categories.forEach(category => {
+                                html += `<button class="category-filter-btn" data-category="${category}">${category}</button>`;
+                            });
+                            html += '</div>';
+                        }
+                        
+                        html += '<div class="dishes-grid">';
+                        data.dishes.forEach(dish => {
+                            html += `
+                                <div class="dish-card" 
+                                     data-category="${dish.category || 'sem-categoria'}"
+                                     data-dish-id="${dish.id}"
+                                     onclick="openDishDetailModal(${dish.id})">
+                                    ${dish.image ? 
+                                        `<img src="${dish.image}" alt="${dish.name}" class="dish-image">` : 
+                                        `<div class="dish-no-image"><span class="material-icons">restaurant</span></div>`
+                                    }
+                                    <div class="dish-info">
+                                        <h4 class="dish-name">${dish.name}</h4>
+                                        ${dish.description ? `<p class="dish-description">${dish.description}</p>` : ''}
+                                        <div class="dish-footer">
+                                            <span class="dish-price">R$ ${parseFloat(dish.price).toFixed(2)}</span>
+                                            ${dish.category ? `<span class="dish-category">${dish.category}</span>` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        html += '</div>';
+                        
+                        // Renderizar e adicionar event listeners aos filtros
+                        modalBody.innerHTML = html;
+                        
+                        const filterButtons = modalBody.querySelectorAll('.category-filter-btn');
+                        const dishCards = modalBody.querySelectorAll('.dish-card');
+                        const searchInput = document.getElementById('dishSearchInput');
+                        
+                        let currentCategory = 'all';
+                        let currentSearchTerm = '';
+                        
+                        // Função para aplicar todos os filtros
+                        function applyFilters() {
+                            dishCards.forEach(card => {
+                                const category = card.getAttribute('data-category');
+                                const dishName = card.querySelector('.dish-name').textContent.toLowerCase();
+                                const dishDesc = card.querySelector('.dish-description')?.textContent.toLowerCase() || '';
+                                
+                                const matchesCategory = currentCategory === 'all' || category === currentCategory;
+                                const matchesSearch = currentSearchTerm === '' || 
+                                                     dishName.includes(currentSearchTerm) || 
+                                                     dishDesc.includes(currentSearchTerm);
+                                
+                                if (matchesCategory && matchesSearch) {
+                                    card.style.display = 'block';
+                                } else {
+                                    card.style.display = 'none';
+                                }
+                            });
+                        }
+                        
+                        // Event listener para filtro de categoria
+                        filterButtons.forEach(btn => {
+                            btn.addEventListener('click', function() {
+                                currentCategory = this.getAttribute('data-category');
+                                
+                                // Atualizar botão ativo
+                                filterButtons.forEach(b => b.classList.remove('active'));
+                                this.classList.add('active');
+                                
+                                applyFilters();
+                            });
+                        });
+                        
+                        // Event listener para busca
+                        if (searchInput) {
+                            searchInput.addEventListener('input', function() {
+                                currentSearchTerm = this.value.toLowerCase();
+                                applyFilters();
+                            });
+                        }
+                    } else {
+                        html += '<p style="text-align: center; color: #666; padding: 40px;">Nenhum prato disponível no momento.</p>';
+                        modalBody.innerHTML = html;
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    modalTitle.textContent = 'Erro';
+                    modalBody.innerHTML = '<div style="text-align: center; padding: 40px;"><p style="color: #D32F2F;">Não foi possível carregar o cardápio. Tente novamente.</p></div>';
+                });
+        }
+
+        function closeRestaurantModal() {
+            const modal = document.getElementById('restaurantModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // Event listener para fechar com ESC
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const modal = document.getElementById('restaurantModal');
+                if (modal.classList.contains('active')) {
+                    closeRestaurantModal();
+                }
+            }
+        });
+
+        // Event listener para fechar clicando fora do modal
+        document.getElementById('restaurantModal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeRestaurantModal();
+            }
+        });
+
+        // Armazenar dados dos pratos globalmente
+        let allDishesData = [];
+
+        function openDishDetailModal(dishId) {
+            const dish = allDishesData.find(d => d.id === dishId);
+            if (!dish) return;
+
+            const modal = document.getElementById('dishDetailModal');
+            const modalTitle = document.getElementById('dishDetailName');
+            const modalBody = document.getElementById('dishDetailBody');
+
+            modalTitle.textContent = dish.name;
+
+            let html = `
+                <div class="dish-detail-image-container">
+                    ${dish.image ? 
+                        `<img src="${dish.image}" alt="${dish.name}" class="dish-detail-image">` : 
+                        `<div class="dish-no-image" style="height: 300px;"><span class="material-icons">restaurant</span></div>`
+                    }
+                </div>
+
+                <div class="dish-detail-price">R$ ${parseFloat(dish.price).toFixed(2)}</div>
+
+                ${dish.category ? `
+                    <div class="dish-detail-section">
+                        <h3>Categoria</h3>
+                        <p>${dish.category}</p>
+                    </div>
+                ` : ''}
+
+                ${dish.description ? `
+                    <div class="dish-detail-section">
+                        <h3>Descrição</h3>
+                        <p>${dish.description}</p>
+                    </div>
+                ` : ''}
+
+                ${(dish.is_vegan || dish.is_vegetarian || dish.is_gluten_free) ? `
+                    <div class="dish-detail-section">
+                        <h3>Informações Dietéticas</h3>
+                        <div class="dish-detail-tags">
+                            ${dish.is_vegan ? '<span class="dish-detail-tag vegan"><span class="material-icons">eco</span>Vegano</span>' : ''}
+                            ${dish.is_vegetarian ? '<span class="dish-detail-tag vegetarian"><span class="material-icons">local_florist</span>Vegetariano</span>' : ''}
+                            ${dish.is_gluten_free ? '<span class="dish-detail-tag gluten-free"><span class="material-icons">grain</span>Sem Glúten</span>' : ''}
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+
+            modalBody.innerHTML = html;
+            modal.classList.add('active');
+        }
+
+        function closeDishDetailModal() {
+            const modal = document.getElementById('dishDetailModal');
+            modal.classList.remove('active');
+        }
+
+        // Event listeners para modal de detalhes
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const dishModal = document.getElementById('dishDetailModal');
+                if (dishModal.classList.contains('active')) {
+                    closeDishDetailModal();
+                }
+            }
+        });
+
+        document.getElementById('dishDetailModal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeDishDetailModal();
+            }
+        });
 
 </script>
 {% endblock %}
