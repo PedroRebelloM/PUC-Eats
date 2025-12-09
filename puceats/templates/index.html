@@ -128,6 +128,9 @@
                     return response.json();
                 })
                 .then(data => {
+                    // Armazenar dados dos pratos globalmente
+                    allDishesData = data.dishes || [];
+                    
                     // Atualizar título
                     modalTitle.textContent = data.name;
                     
@@ -197,7 +200,10 @@
                         html += '<div class="dishes-grid">';
                         data.dishes.forEach(dish => {
                             html += `
-                                <div class="dish-card" data-category="${dish.category || 'sem-categoria'}">
+                                <div class="dish-card" 
+                                     data-category="${dish.category || 'sem-categoria'}"
+                                     data-dish-id="${dish.id}"
+                                     onclick="openDishDetailModal(${dish.id})">
                                     ${dish.image ? 
                                         `<img src="${dish.image}" alt="${dish.name}" class="dish-image">` : 
                                         `<div class="dish-no-image"><span class="material-icons">restaurant</span></div>`
@@ -297,6 +303,79 @@
         document.getElementById('restaurantModal').addEventListener('click', function(event) {
             if (event.target === this) {
                 closeRestaurantModal();
+            }
+        });
+
+        // Armazenar dados dos pratos globalmente
+        let allDishesData = [];
+
+        function openDishDetailModal(dishId) {
+            const dish = allDishesData.find(d => d.id === dishId);
+            if (!dish) return;
+
+            const modal = document.getElementById('dishDetailModal');
+            const modalTitle = document.getElementById('dishDetailName');
+            const modalBody = document.getElementById('dishDetailBody');
+
+            modalTitle.textContent = dish.name;
+
+            let html = `
+                ${dish.image ? `
+                    <div class="dish-detail-image-container">
+                        <img src="${dish.image}" alt="${dish.name}" class="dish-detail-image">
+                    </div>
+                ` : ''}
+
+                <div class="dish-detail-price">R$ ${parseFloat(dish.price).toFixed(2)}</div>
+
+                ${dish.category ? `
+                    <div class="dish-detail-section">
+                        <h3>Categoria</h3>
+                        <p>${dish.category}</p>
+                    </div>
+                ` : ''}
+
+                ${dish.description ? `
+                    <div class="dish-detail-section">
+                        <h3>Descrição</h3>
+                        <p>${dish.description}</p>
+                    </div>
+                ` : ''}
+
+                ${(dish.is_vegan || dish.is_vegetarian || dish.is_gluten_free) ? `
+                    <div class="dish-detail-section">
+                        <h3>Informações Dietéticas</h3>
+                        <div class="dish-detail-tags">
+                            ${dish.is_vegan ? '<span class="dish-detail-tag vegan"><span class="material-icons">eco</span>Vegano</span>' : ''}
+                            ${dish.is_vegetarian ? '<span class="dish-detail-tag vegetarian"><span class="material-icons">local_florist</span>Vegetariano</span>' : ''}
+                            ${dish.is_gluten_free ? '<span class="dish-detail-tag gluten-free"><span class="material-icons">grain</span>Sem Glúten</span>' : ''}
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+
+            modalBody.innerHTML = html;
+            modal.classList.add('active');
+        }
+
+        function closeDishDetailModal() {
+            const modal = document.getElementById('dishDetailModal');
+            modal.classList.remove('active');
+        }
+
+        // Event listeners para modal de detalhes
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const dishModal = document.getElementById('dishDetailModal');
+                if (dishModal.classList.contains('active')) {
+                    closeDishDetailModal();
+                }
+            }
+        });
+
+        document.getElementById('dishDetailModal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeDishDetailModal();
             }
         });
 
