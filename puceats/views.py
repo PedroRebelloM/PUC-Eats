@@ -43,15 +43,14 @@ def get_restaurant_menu(request, restaurant_id):
         
         return JsonResponse({
             'success': True,
-            'restaurant': {
-                'id': restaurant.id,
-                'name': restaurant.name,
-                'logo': restaurant.logo.url if restaurant.logo else None,
-                'establishment_type': restaurant.get_establishment_type_display(),
-                'cuisine_type': restaurant.get_cuisine_type_display(),
-                'building': restaurant.building,
-                'description': restaurant.description,
-            },
+            'name': restaurant.name,
+            'logo': restaurant.logo.url if restaurant.logo else None,
+            'establishment_type': restaurant.get_establishment_type_display(),
+            'cuisine_type': restaurant.get_cuisine_type_display(),
+            'building': restaurant.building if restaurant.building else None,
+            'description': restaurant.description if restaurant.description else None,
+            'opening_hours': restaurant.opening_hours if restaurant.opening_hours else None,
+            'phone': restaurant.phone if restaurant.phone else None,
             'dishes': dishes_data
         })
     except Restaurant.DoesNotExist:

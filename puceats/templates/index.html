@@ -95,9 +95,99 @@
             .bindPopup('PUC-Rio');
 
         function openRestaurantModal(restaurantId) {
-            console.log('Teste', restaurantId);
-           
+            const modal = document.getElementById('restaurantModal');
+            const modalTitle = document.getElementById('modalRestaurantName');
+            const modalBody = document.getElementById('modalRestaurantBody');
+            
+            // Mostrar loading
+            modalTitle.textContent = 'Carregando...';
+            modalBody.innerHTML = '<div style="text-align: center; padding: 40px;"><p>Carregando cardápio...</p></div>';
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            
+            // Buscar dados do restaurante
+            fetch(`/puceats/api/restaurante/${restaurantId}/menu/`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Erro ao carregar cardápio');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Atualizar título
+                    modalTitle.textContent = data.name;
+                    
+                    // Renderizar informações do restaurante
+                    let html = `
+                        <div class="restaurant-modal-info">
+                            ${data.logo ? `<img src="${data.logo}" alt="${data.name}" class="restaurant-modal-logo">` : ''}
+                            <div class="restaurant-modal-details">
+                                <h3>${data.name}</h3>
+                                ${data.establishment_type ? `<p><strong>Tipo:</strong> ${data.establishment_type}</p>` : ''}
+                                ${data.cuisine_type ? `<p><strong>Culinária:</strong> ${data.cuisine_type}</p>` : ''}
+                                ${data.building ? `<p><strong>Prédio:</strong> ${data.building}</p>` : ''}
+                                ${data.opening_hours ? `<p><strong>Horário:</strong> ${data.opening_hours}</p>` : ''}
+                                ${data.phone ? `<p><strong>Telefone:</strong> ${data.phone}</p>` : ''}
+                                ${data.description ? `<p style="margin-top: 12px;">${data.description}</p>` : ''}
+                            </div>
+                        </div>
+                        
+                        <h3 style="margin-bottom: 16px; color: #333;">Cardápio</h3>
+                    `;
+                    
+                    if (data.dishes && data.dishes.length > 0) {
+                        html += '<div class="dishes-grid">';
+                        data.dishes.forEach(dish => {
+                            html += `
+                                <div class="dish-card">
+                                    ${dish.image ? `<img src="${dish.image}" alt="${dish.name}" class="dish-image">` : ''}
+                                    <div class="dish-info">
+                                        <h4 class="dish-name">${dish.name}</h4>
+                                        ${dish.description ? `<p class="dish-description">${dish.description}</p>` : ''}
+                                        <div class="dish-footer">
+                                            <span class="dish-price">R$ ${parseFloat(dish.price).toFixed(2)}</span>
+                                            ${dish.category ? `<span class="dish-category">${dish.category}</span>` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        html += '</div>';
+                    } else {
+                        html += '<p style="text-align: center; color: #666; padding: 40px;">Nenhum prato disponível no momento.</p>';
+                    }
+                    
+                    modalBody.innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    modalTitle.textContent = 'Erro';
+                    modalBody.innerHTML = '<div style="text-align: center; padding: 40px;"><p style="color: #D32F2F;">Não foi possível carregar o cardápio. Tente novamente.</p></div>';
+                });
         }
+
+        function closeRestaurantModal() {
+            const modal = document.getElementById('restaurantModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // Event listener para fechar com ESC
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const modal = document.getElementById('restaurantModal');
+                if (modal.classList.contains('active')) {
+                    closeRestaurantModal();
+                }
+            }
+        });
+
+        // Event listener para fechar clicando fora do modal
+        document.getElementById('restaurantModal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeRestaurantModal();
+            }
+        });
 
 </script>
 {% endblock %}
