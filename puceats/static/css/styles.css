@@ -711,6 +711,39 @@ body {
     line-height: 1.6;
 }
 
+/* Category Filters */
+.category-filters {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.category-filter-btn {
+    padding: 8px 16px;
+    border: 2px solid #e0e0e0;
+    background: white;
+    border-radius: 20px;
+    font-size: 14px;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.category-filter-btn:hover {
+    border-color: #9CCC65;
+    color: #9CCC65;
+}
+
+.category-filter-btn.active {
+    background: #9CCC65;
+    border-color: #9CCC65;
+    color: white;
+}
+
 /* Dishes Grid */
 .dishes-grid {
     display: grid;

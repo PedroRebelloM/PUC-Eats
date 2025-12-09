@@ -158,10 +158,23 @@
                     `;
                     
                     if (data.dishes && data.dishes.length > 0) {
+                        // Extrair categorias únicas
+                        const categories = [...new Set(data.dishes.map(dish => dish.category).filter(Boolean))];
+                        
+                        // Adicionar filtros de categoria (só se houver categorias)
+                        if (categories.length > 0) {
+                            html += '<div class="category-filters">';
+                            html += '<button class="category-filter-btn active" data-category="all">Todos</button>';
+                            categories.forEach(category => {
+                                html += `<button class="category-filter-btn" data-category="${category}">${category}</button>`;
+                            });
+                            html += '</div>';
+                        }
+                        
                         html += '<div class="dishes-grid">';
                         data.dishes.forEach(dish => {
                             html += `
-                                <div class="dish-card">
+                                <div class="dish-card" data-category="${dish.category || 'sem-categoria'}">
                                     ${dish.image ? 
                                         `<img src="${dish.image}" alt="${dish.name}" class="dish-image">` : 
                                         `<div class="dish-no-image"><span class="material-icons">restaurant</span></div>`
@@ -178,11 +191,36 @@
                             `;
                         });
                         html += '</div>';
+                        
+                        // Renderizar e adicionar event listeners aos filtros
+                        modalBody.innerHTML = html;
+                        
+                        // Adicionar funcionalidade de filtro
+                        const filterButtons = modalBody.querySelectorAll('.category-filter-btn');
+                        const dishCards = modalBody.querySelectorAll('.dish-card');
+                        
+                        filterButtons.forEach(btn => {
+                            btn.addEventListener('click', function() {
+                                const category = this.getAttribute('data-category');
+                                
+                                // Atualizar botão ativo
+                                filterButtons.forEach(b => b.classList.remove('active'));
+                                this.classList.add('active');
+                                
+                                // Filtrar pratos
+                                dishCards.forEach(card => {
+                                    if (category === 'all' || card.getAttribute('data-category') === category) {
+                                        card.style.display = 'block';
+                                    } else {
+                                        card.style.display = 'none';
+                                    }
+                                });
+                            });
+                        });
                     } else {
                         html += '<p style="text-align: center; color: #666; padding: 40px;">Nenhum prato disponível no momento.</p>';
+                        modalBody.innerHTML = html;
                     }
-                    
-                    modalBody.innerHTML = html;
                 })
                 .catch(error => {
                     console.error('Erro:', error);
