@@ -38,6 +38,9 @@
                         <p class="restaurant-location">{{ restaurant.building|default:"Campus PUC" }}</p>
                         <p class="restaurant-cuisine">{{ restaurant.get_cuisine_type_display }}</p>
                     </div>
+                    <button class="favorite-btn" data-restaurant-id="{{ restaurant.id }}" onclick="event.stopPropagation();" title="Adicionar aos favoritos">
+                        <span class="material-icons">favorite_border</span>
+                    </button>
                 </div>
                 {% empty %}
                 <p style="text-align: center; color: #666; padding: 20px;">
@@ -52,9 +55,14 @@
         <div class="restaurant-modal-content">
             <div class="restaurant-modal-header">
                 <h2 id="modalRestaurantName">Carregando...</h2>
-                <button class="restaurant-modal-close" onclick="closeRestaurantModal()">
-                    <span class="material-icons">close</span>
-                </button>
+                <div class="modal-header-actions">
+                    <button class="favorite-btn modal-favorite-btn" data-restaurant-id="" onclick="event.stopPropagation();" title="Adicionar aos favoritos">
+                        <span class="material-icons">favorite_border</span>
+                    </button>
+                    <button class="restaurant-modal-close" onclick="closeRestaurantModal()">
+                        <span class="material-icons">close</span>
+                    </button>
+                </div>
             </div>
             <div class="restaurant-modal-body" id="modalRestaurantBody">
                 <p style="text-align: center; padding: 20px;">Carregando cardápio...</p>
@@ -111,6 +119,16 @@
             const modal = document.getElementById('restaurantModal');
             const modalTitle = document.getElementById('modalRestaurantName');
             const modalBody = document.getElementById('modalRestaurantBody');
+            const modalFavoriteBtn = modal.querySelector('.modal-favorite-btn');
+            
+            // Atualizar ID do restaurante no botão de favoritar do modal
+            if (modalFavoriteBtn) {
+                modalFavoriteBtn.setAttribute('data-restaurant-id', restaurantId);
+                // Atualizar estado visual do botão
+                if (window.FavoritesManager) {
+                    window.FavoritesManager.updateButton(modalFavoriteBtn, restaurantId);
+                }
+            }
             
             // Mostrar loading
             modalTitle.textContent = 'Carregando...';
