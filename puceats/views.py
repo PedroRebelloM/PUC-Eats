@@ -93,7 +93,7 @@ def login(request):
             messages.error(request, 'Credenciais inválidas. Verifique seu email/usuário e senha e tente novamente.')
     
     return render(request, 'login.html')
-
+#tesada beranro 
 @ensure_csrf_cookie
 def cadastro(request):
     if request.method == 'POST':
