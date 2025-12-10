@@ -106,15 +106,134 @@
             attribution: ''
         }).addTo(map);
 
-        const customIcon = L.divIcon({
-            className: 'custom-marker',
-            html: '<div style="background-color: #9CCC65; width: 30px; height: 30px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"><div style="width: 10px; height: 10px; background-color: white; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(45deg);"></div></div>',
-            iconSize: [30, 30],
-            iconAnchor: [15, 30]
+        // Organizar restaurantes por prédio
+        const restaurantsByBuilding = {
+            'Cardeal Leme': [],
+            'Kennedy': [],
+            'Outros': []
+        };
+
+        {% for restaurant in restaurants %}
+        {
+            const building = "{{ restaurant.building|default:'Outros' }}";
+            const restaurantData = {
+                id: {{ restaurant.id }},
+                name: "{{ restaurant.name|escapejs }}",
+                cuisine: "{{ restaurant.get_cuisine_type_display|escapejs }}",
+                building: building,
+                logo: {% if restaurant.logo %}"{{ restaurant.logo.url }}"{% else %}""{% endif %}
+            };
+            
+            if (building.includes('Cardeal Leme') || building.includes('Leme')) {
+                restaurantsByBuilding['Cardeal Leme'].push(restaurantData);
+            } else if (building.includes('Kennedy')) {
+                restaurantsByBuilding['Kennedy'].push(restaurantData);
+            } else {
+                restaurantsByBuilding['Outros'].push(restaurantData);
+            }
+        }
+        {% endfor %}
+
+        // Coordenadas dos prédios
+        const buildingCoords = {
+            'Cardeal Leme': [-22.979905626939328, -43.232694849620536],
+            'Kennedy': [-22.97899690169501, -43.23253928152602]
+        };
+
+        // Criar ícone de cluster
+        function createClusterIcon(count, building) {
+            const color = building === 'Cardeal Leme' ? '#FF6B6B' : '#4ECDC4';
+            return L.divIcon({
+                className: 'cluster-marker',
+                html: `<div style="background-color: ${color}; width: 45px; height: 45px; border-radius: 50%; border: 4px solid white; box-shadow: 0 3px 10px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 16px; cursor: pointer;">${count}</div>`,
+                iconSize: [45, 45],
+                iconAnchor: [22.5, 22.5]
+            });
+        }
+
+        // Adicionar clusters nos prédios
+        ['Cardeal Leme', 'Kennedy'].forEach(building => {
+            const restaurants = restaurantsByBuilding[building];
+            if (restaurants.length > 0) {
+                const marker = L.marker(buildingCoords[building], {
+                    icon: createClusterIcon(restaurants.length, building)
+                }).addTo(map);
+
+                marker.on('click', function() {
+                    showClusterPanel(building, restaurants);
+                });
+            }
         });
 
-        L.marker(pucRio, {icon: customIcon}).addTo(map)
-            .bindPopup('PUC-Rio');
+        // Função para mostrar painel com restaurantes do cluster
+        function showClusterPanel(building, restaurants) {
+            // Criar overlay
+            let overlay = document.getElementById('clusterOverlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'clusterOverlay';
+                overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9998; display: none;';
+                document.body.appendChild(overlay);
+                
+                overlay.addEventListener('click', function() {
+                    closeClusterPanel();
+                });
+            }
+
+            // Criar painel
+            let panel = document.getElementById('clusterPanel');
+            if (!panel) {
+                panel = document.createElement('div');
+                panel.id = 'clusterPanel';
+                panel.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 9999; max-width: 500px; width: 90%; max-height: 80vh; overflow: hidden; display: none;';
+                document.body.appendChild(panel);
+            }
+
+            let html = `
+                <div style="background: linear-gradient(135deg, #9CCC65 0%, #8BC34A 100%); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="margin: 0; font-size: 24px;">${building}</h2>
+                        <p style="margin: 4px 0 0 0; opacity: 0.9;">${restaurants.length} ${restaurants.length === 1 ? 'restaurante' : 'restaurantes'}</p>
+                    </div>
+                    <button onclick="closeClusterPanel()" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 24px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">×</button>
+                </div>
+                <div style="padding: 20px; overflow-y: auto; max-height: calc(80vh - 100px);">
+            `;
+
+            restaurants.forEach(restaurant => {
+                html += `
+                    <div onclick="openRestaurantModal(${restaurant.id}); closeClusterPanel();" style="display: flex; gap: 16px; padding: 16px; border-radius: 12px; cursor: pointer; transition: background 0.2s; margin-bottom: 12px; border: 1px solid #e0e0e0;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
+                        ${restaurant.logo ? 
+                            `<img src="${restaurant.logo}" alt="${restaurant.name}" style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover;">` :
+                            `<div style="width: 60px; height: 60px; min-width: 60px; border-radius: 8px; background: #f5f5f5; display: flex; align-items: center; justify-content: center;">
+                                <span class="material-icons" style="color: #9CCC65; font-size: 32px;">restaurant</span>
+                            </div>`
+                        }
+                        <div style="flex: 1;">
+                            <h3 style="margin: 0 0 4px 0; font-size: 16px; color: #333;">${restaurant.name}</h3>
+                            <p style="margin: 0; font-size: 14px; color: #666;">${restaurant.cuisine}</p>
+                            <p style="margin: 4px 0 0 0; font-size: 12px; color: #999;">${restaurant.building}</p>
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <span class="material-icons" style="color: #9CCC65;">chevron_right</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+            
+            panel.innerHTML = html;
+            overlay.style.display = 'block';
+            panel.style.display = 'block';
+        }
+
+        function closeClusterPanel() {
+            const overlay = document.getElementById('clusterOverlay');
+            const panel = document.getElementById('clusterPanel');
+            if (overlay) overlay.style.display = 'none';
+            if (panel) panel.style.display = 'none';
+        }
 
         function handleRestaurantClick(event, restaurantId) {
             // Verificar se o clique foi no botão de favorito ou dentro dele
