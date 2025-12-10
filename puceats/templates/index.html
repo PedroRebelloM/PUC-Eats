@@ -440,8 +440,21 @@
             return [];
         }
 
+        // Função para remover acentos e normalizar texto
+        function normalizeText(text) {
+            return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        }
+
+        // Função de match melhorada
+        function smartMatch(text, searchTerms) {
+            const normalizedText = normalizeText(text);
+            
+            // Verificar se todas as palavras do termo de busca estão presentes
+            return searchTerms.every(term => normalizedText.includes(term));
+        }
+
         async function filterRestaurants(searchTerm) {
-            const term = searchTerm.toLowerCase().trim();
+            const term = searchTerm.trim();
             const restaurantItems = document.querySelectorAll('.restaurant-item');
             let visibleCount = 0;
 
@@ -460,32 +473,38 @@
                 return;
             }
 
+            // Dividir termo em palavras e normalizar
+            const searchTerms = normalizeText(term).split(/\s+/).filter(t => t.length > 0);
+
             // Processar cada restaurante
             const promises = Array.from(restaurantItems).map(async (item) => {
-                const name = item.querySelector('.restaurant-name')?.textContent.toLowerCase() || '';
-                const cuisine = item.querySelector('.restaurant-cuisine')?.textContent.toLowerCase() || '';
-                const location = item.querySelector('.restaurant-location')?.textContent.toLowerCase() || '';
+                const name = item.querySelector('.restaurant-name')?.textContent || '';
+                const cuisine = item.querySelector('.restaurant-cuisine')?.textContent || '';
+                const location = item.querySelector('.restaurant-location')?.textContent || '';
 
                 // Verificar match nos dados do restaurante
-                const restaurantMatch = name.includes(term) || 
-                                       cuisine.includes(term) || 
-                                       location.includes(term);
+                const restaurantMatch = smartMatch(name, searchTerms) || 
+                                       smartMatch(cuisine, searchTerms) || 
+                                       smartMatch(location, searchTerms);
 
                 // Buscar nos pratos
                 const restaurantId = item.getAttribute('onclick')?.match(/\d+/)?.[0];
                 let dishMatch = false;
                 let matchedDish = null;
+                let matchCount = 0;
 
                 if (restaurantId) {
                     const dishes = await fetchRestaurantDishes(restaurantId);
                     for (const dish of dishes) {
-                        const dishName = (dish.name || '').toLowerCase();
-                        const dishDesc = (dish.description || '').toLowerCase();
+                        const dishName = dish.name || '';
+                        const dishDesc = dish.description || '';
                         
-                        if (dishName.includes(term) || dishDesc.includes(term)) {
+                        if (smartMatch(dishName, searchTerms) || smartMatch(dishDesc, searchTerms)) {
                             dishMatch = true;
-                            matchedDish = dish.name;
-                            break;
+                            matchCount++;
+                            if (!matchedDish) {
+                                matchedDish = dish.name;
+                            }
                         }
                     }
                 }
@@ -500,10 +519,14 @@
                     visibleCount++;
 
                     // Adicionar badge se o match foi por prato
-                    if (dishMatch && !restaurantMatch && matchedDish) {
+                    if (dishMatch && !restaurantMatch) {
                         const badge = document.createElement('span');
                         badge.className = 'search-match-badge';
-                        badge.innerHTML = `<span class="material-icons">restaurant_menu</span> ${matchedDish}`;
+                        if (matchCount === 1) {
+                            badge.innerHTML = `<span class="material-icons">restaurant_menu</span> ${matchedDish}`;
+                        } else {
+                            badge.innerHTML = `<span class="material-icons">restaurant_menu</span> ${matchCount} pratos encontrados`;
+                        }
                         item.querySelector('.restaurant-info').appendChild(badge);
                     }
                 } else {
