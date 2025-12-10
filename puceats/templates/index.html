@@ -47,6 +47,12 @@
                     Nenhum restaurante cadastrado ainda.
                 </p>
                 {% endfor %}
+                
+                <div id="noResultsMessage" style="display: none; text-align: center; padding: 40px; color: #666;">
+                    <span class="material-icons" style="font-size: 48px; color: #ccc;">search_off</span>
+                    <p style="margin-top: 12px; font-size: 16px;">Nenhum restaurante encontrado</p>
+                    <p style="margin-top: 8px; font-size: 14px; color: #999;">Tente buscar por outro termo</p>
+                </div>
             </div>
         </aside>
     </div>
@@ -404,6 +410,152 @@
                 closeDishDetailModal();
             }
         });
+
+        // Sistema de Busca de Restaurantes e Pratos
+        const searchInputDesktop = document.getElementById('restaurantSearchInput');
+        const searchInputMobile = document.getElementById('restaurantSearchInputMobile');
+        const clearBtnDesktop = document.getElementById('searchClearBtn');
+        const clearBtnMobile = document.getElementById('searchClearBtnMobile');
+        
+        // Cache para armazenar dados dos pratos
+        const dishesCache = {};
+
+        async function fetchRestaurantDishes(restaurantId) {
+            if (dishesCache[restaurantId]) {
+                return dishesCache[restaurantId];
+            }
+
+            try {
+                const response = await fetch(`/puceats/api/restaurante/${restaurantId}/menu/`);
+                const data = await response.json();
+                
+                if (data.success && data.dishes) {
+                    dishesCache[restaurantId] = data.dishes;
+                    return data.dishes;
+                }
+            } catch (error) {
+                console.error(`Erro ao buscar pratos do restaurante ${restaurantId}:`, error);
+            }
+            
+            return [];
+        }
+
+        async function filterRestaurants(searchTerm) {
+            const term = searchTerm.toLowerCase().trim();
+            const restaurantItems = document.querySelectorAll('.restaurant-item');
+            let visibleCount = 0;
+
+            if (term === '') {
+                // Sem termo de busca, mostrar todos
+                restaurantItems.forEach(item => {
+                    item.style.display = 'flex';
+                    const badge = item.querySelector('.search-match-badge');
+                    if (badge) badge.remove();
+                });
+                
+                const noResultsMsg = document.getElementById('noResultsMessage');
+                if (noResultsMsg) {
+                    noResultsMsg.style.display = 'none';
+                }
+                return;
+            }
+
+            // Processar cada restaurante
+            const promises = Array.from(restaurantItems).map(async (item) => {
+                const name = item.querySelector('.restaurant-name')?.textContent.toLowerCase() || '';
+                const cuisine = item.querySelector('.restaurant-cuisine')?.textContent.toLowerCase() || '';
+                const location = item.querySelector('.restaurant-location')?.textContent.toLowerCase() || '';
+
+                // Verificar match nos dados do restaurante
+                const restaurantMatch = name.includes(term) || 
+                                       cuisine.includes(term) || 
+                                       location.includes(term);
+
+                // Buscar nos pratos
+                const restaurantId = item.getAttribute('onclick')?.match(/\d+/)?.[0];
+                let dishMatch = false;
+                let matchedDish = null;
+
+                if (restaurantId) {
+                    const dishes = await fetchRestaurantDishes(restaurantId);
+                    for (const dish of dishes) {
+                        const dishName = (dish.name || '').toLowerCase();
+                        const dishDesc = (dish.description || '').toLowerCase();
+                        
+                        if (dishName.includes(term) || dishDesc.includes(term)) {
+                            dishMatch = true;
+                            matchedDish = dish.name;
+                            break;
+                        }
+                    }
+                }
+
+                // Remover badge anterior se existir
+                const oldBadge = item.querySelector('.search-match-badge');
+                if (oldBadge) oldBadge.remove();
+
+                // Mostrar/ocultar restaurante
+                if (restaurantMatch || dishMatch) {
+                    item.style.display = 'flex';
+                    visibleCount++;
+
+                    // Adicionar badge se o match foi por prato
+                    if (dishMatch && !restaurantMatch && matchedDish) {
+                        const badge = document.createElement('span');
+                        badge.className = 'search-match-badge';
+                        badge.innerHTML = `<span class="material-icons">restaurant_menu</span> ${matchedDish}`;
+                        item.querySelector('.restaurant-info').appendChild(badge);
+                    }
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            await Promise.all(promises);
+
+            const noResultsMsg = document.getElementById('noResultsMessage');
+            if (noResultsMsg) {
+                noResultsMsg.style.display = visibleCount === 0 ? 'block' : 'none';
+            }
+        }
+
+        function toggleClearButton(input, clearBtn) {
+            if (clearBtn) {
+                clearBtn.style.display = input.value.length > 0 ? 'flex' : 'none';
+            }
+        }
+
+        if (searchInputDesktop) {
+            searchInputDesktop.addEventListener('input', function(e) {
+                filterRestaurants(e.target.value);
+                toggleClearButton(searchInputDesktop, clearBtnDesktop);
+            });
+        }
+
+        if (searchInputMobile) {
+            searchInputMobile.addEventListener('input', function(e) {
+                filterRestaurants(e.target.value);
+                toggleClearButton(searchInputMobile, clearBtnMobile);
+            });
+        }
+
+        if (clearBtnDesktop) {
+            clearBtnDesktop.addEventListener('click', function() {
+                searchInputDesktop.value = '';
+                filterRestaurants('');
+                toggleClearButton(searchInputDesktop, clearBtnDesktop);
+                searchInputDesktop.focus();
+            });
+        }
+
+        if (clearBtnMobile) {
+            clearBtnMobile.addEventListener('click', function() {
+                searchInputMobile.value = '';
+                filterRestaurants('');
+                toggleClearButton(searchInputMobile, clearBtnMobile);
+                searchInputMobile.focus();
+            });
+        }
 
 </script>
 {% endblock %}

@@ -173,8 +173,6 @@ const FavoritesManager = {
      * Inicializar sistema de favoritos
      */
     init() {
-        console.log('🎯 Sistema de Favoritos inicializado');
-        console.log(`📊 Total de favoritos: ${this.getCount()}`);
         
         // Atualizar contador inicial
         this.updateCounter();

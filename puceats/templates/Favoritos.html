@@ -71,29 +71,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Fazer request com os IDs
-    const idsParam = favorites.join(',');
-    fetch(`/puceats/favoritos/?ids=${idsParam}`)
-        .then(response => response.text())
-        .then(html => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const serverGrid = doc.querySelector('.favorites-grid');
-            
-            if (serverGrid && serverGrid.innerHTML.trim()) {
-                favoritesGrid.innerHTML = serverGrid.innerHTML;
-            } else {
-                renderFavorites(favorites);
-            }
-        })
-        .catch(error => {
-            console.error('Erro ao carregar favoritos:', error);
-            renderFavorites(favorites);
-        });
+    // Renderizar favoritos diretamente usando a API
+    renderFavorites(favorites);
 });
 
 function renderFavorites(favoriteIds) {
     const grid = document.getElementById('favoritesGrid');
+    grid.innerHTML = '<div style="text-align: center; padding: 40px;"><p>Carregando restaurantes...</p></div>';
     
     const promises = favoriteIds.map(id => 
         fetch(`/puceats/api/restaurante/${id}/menu/`)
@@ -105,7 +89,7 @@ function renderFavorites(favoriteIds) {
         const validRestaurants = restaurants.filter(r => r && r.success !== false);
         
         if (validRestaurants.length === 0) {
-            grid.innerHTML = '<p style="text-align: center; padding: 40px;">Nenhum restaurante encontrado</p>';
+            grid.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">Nenhum restaurante encontrado</p>';
             return;
         }
         
@@ -113,7 +97,7 @@ function renderFavorites(favoriteIds) {
             <article class="favorite-card" data-restaurant-id="${restaurant.id}" style="cursor: pointer;">
                 <div class="card-image">
                     ${restaurant.logo ? `<img src="${restaurant.logo}" alt="${restaurant.name}" />` : 
-                      `<div class="restaurant-placeholder"><span class="material-icons">restaurant</span></div>`}
+                      `<div class="restaurant-placeholder" style="width: 100%; height: 200px; background: #f5f5f5; display: flex; align-items: center; justify-content: center;"><span class="material-icons" style="font-size: 48px; color: #ccc;">restaurant</span></div>`}
                     <button class="favorite-btn active" data-restaurant-id="${restaurant.id}">
                         <span class="material-icons">favorite</span>
                     </button>
@@ -125,6 +109,8 @@ function renderFavorites(favoriteIds) {
                 </div>
             </article>
         `).join('');
+    }).catch(() => {
+        grid.innerHTML = '<p style="text-align: center; padding: 40px; color: #E53935;">Erro ao carregar favoritos. Tente novamente.</p>';
     });
 }
 
