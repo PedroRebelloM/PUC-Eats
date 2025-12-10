@@ -32,6 +32,9 @@
                             <span class="material-icons">restaurant</span>
                         </div>
                         {% endif %}
+                        <button class="favorite-btn" data-restaurant-id="{{ restaurant.id }}" onclick="event.stopPropagation();" title="Adicionar aos favoritos">
+                            <span class="material-icons">favorite_border</span>
+                        </button>
                     </div>
                     <div class="restaurant-info">
                         <h3 class="restaurant-name">{{ restaurant.name }}</h3>
