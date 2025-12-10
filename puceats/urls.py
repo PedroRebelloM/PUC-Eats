@@ -14,6 +14,9 @@ urlpatterns = [
     path('esqueci-senha/', views.esqueci_senha, name='esqueci-senha'),
     path('favoritos/', views.favoritos, name='favoritos'),
     
+    # API
+    path('api/restaurante/<int:restaurant_id>/menu/', views.get_restaurant_menu, name='api-restaurant-menu'),
+    
     # CRUD Pratos
     path('crud/', views.crud, name='crud'),
     path('add-restaurant/', views.add_restaurant, name='add_restaurant'),
