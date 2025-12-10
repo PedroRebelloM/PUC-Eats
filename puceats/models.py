@@ -173,3 +173,51 @@ class Dish(models.Model):
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
 
+class Marker(models.Model):
+    """Marcador no mapa que pode ser atrelado a um restaurante ou ser independente"""
+    MARKER_TYPES = [
+        ("restaurant", "Restaurante"),
+        ("point_of_interest", "Ponto de Interesse"),
+        ("other", "Outro"),
+    ]
+    
+    restaurant = models.OneToOneField(
+        Restaurant,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="marker",
+        verbose_name="Restaurante"
+    )
+    
+    name = models.CharField(max_length=120, verbose_name="Nome do Marcador")
+    marker_type = models.CharField(
+        max_length=30,
+        choices=MARKER_TYPES,
+        default="restaurant",
+        verbose_name="Tipo de Marcador"
+    )
+    
+    latitude = models.FloatField(verbose_name="Latitude", help_text="Ex: -22.9794")
+    longitude = models.FloatField(verbose_name="Longitude", help_text="Ex: -43.2329")
+    
+    description = models.TextField(blank=True, verbose_name="Descrição")
+    icon_color = models.CharField(
+        max_length=7,
+        default="#9CCC65",
+        verbose_name="Cor do Ícone",
+        help_text="Código hexadecimal (ex: #9CCC65)"
+    )
+    
+    is_active = models.BooleanField(default=True, verbose_name="Ativo")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Criado em")
+    
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "Marcador"
+        verbose_name_plural = "Marcadores"
+    
+    def __str__(self):
+        if self.restaurant:
+            return f"Marcador: {self.restaurant.name}"
+        return self.name
