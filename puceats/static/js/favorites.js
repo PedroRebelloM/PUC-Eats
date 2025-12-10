@@ -1,5 +1,4 @@
 
-
 const FavoritesManager = {
     STORAGE_KEY: 'pucEatsFavorites',
 
