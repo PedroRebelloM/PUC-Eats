@@ -455,6 +455,7 @@ body {
     color: #333;
     text-decoration: none;
     transition: background-color 0.2s;
+    position: relative;
 }
 
 .item .material-icons {
@@ -472,6 +473,25 @@ body {
 
 .item.active .material-icons {
     color: #9CCC65;
+}
+
+/* Badge de contador de favoritos */
+.favorites-badge {
+    position: absolute;
+    top: 8px;
+    left: 24px;
+    background: #E53935;
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Toast Notification Styles */
@@ -651,6 +671,19 @@ body {
     font-size: 24px;
     color: #333;
     font-weight: 600;
+    flex: 1;
+}
+
+.modal-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.modal-favorite-btn {
+    position: static;
+    width: 36px;
+    height: 36px;
 }
 
 .restaurant-modal-close {

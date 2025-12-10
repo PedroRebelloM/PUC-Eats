@@ -1,71 +1,131 @@
+{% extends 'base.html' %}
 {% load static %}
-<!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>PUC Eats • Favoritos</title>
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'css/styleFavoritos.css' %}" />
-</head>
-<body>
-  <header class="modern-header">
-    <div class="header-container">
-      <div class="header-left">
-        <div class="logo-wrapper">
-          <div class="logo-icon">
-            <span class="material-icons">place</span>
-          </div>
-          <div>
-            <h1 class="logo-text">PUC <span class="logo-accent">Eats</span></h1>
-            <p class="page-subtitle">Meus Favoritos</p>
-          </div>
-        </div>
-      </div>
-      <div class="header-right">
-        <a href="{% url 'puceats:index' %}" class="btn-back-header">
-          <span class="material-icons">arrow_back</span>
-          <span class="btn-text">Voltar</span>
-        </a>
-      </div>
-    </div>
-  </header>
 
-  <main class="page">
+{% block title %}Favoritos • PUC Eats{% endblock %}
+
+{% block nav_favoritos %}active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/styleFavoritos.css' %}" />
+{% endblock %}
+
+{% block content %}
+<div class="page">
     <div class="page-header">
-      <div class="header-icon-wrapper">
-        <span class="material-icons">favorite</span>
-      </div>
-      <div>
-        <h2 class="page-title">Seus Restaurantes Favoritos</h2>
-        <p class="page-description">Lugares que você marcou como preferidos</p>
-      </div>
+        <div class="header-icon-wrapper">
+            <span class="material-icons">favorite</span>
+        </div>
+        <div>
+            <h2 class="page-title">Seus Restaurantes Favoritos</h2>
+            <p class="page-description" id="favoritesCount">Carregando...</p>
+        </div>
     </div>
 
-    <section class="favorites-grid">
-      <article class="favorite-card">
-        <div class="card-image">
-          <img src="https://media.licdn.com/dms/image/v2/C4E0BAQEPQDnVeWa1cw/company-logo_200_200/company-logo_200_200/0/1656964569131/lemaxhamburgueria_logo?e=2147483647&v=beta&t=y5b70H7LmroOY0aOKfLv4Jn6Yvo3quBgTcSvPzRqOec" alt="Le Max" />
-          <button class="favorite-btn active">
-            <span class="material-icons">favorite</span>
-          </button>
+    <section class="favorites-grid" id="favoritesGrid">
+        <div style="text-align: center; padding: 40px;">
+            <p>Carregando favoritos...</p>
         </div>
-        <div class="card-content">
-          <div class="card-header">
-            <h3 class="card-title">Le Max</h3>
-            <div class="card-rating">
-              <span class="material-icons rating-icon">star</span>
-              <span class="rating-text">4.8</span>
-            </div>
-          </div>
-          <p class="card-category">Lanches e refeições rápidas</p>
-          <p class="card-location">
-            <span class="material-icons location-icon">place</span>
-            Prédio Cardeal Leme
-          </p>
-        </div>
-      </article>
     </section>
-  </main>
-</body>
-</html>
+    
+    <!-- Template vazio quando não há favoritos -->
+    <div id="emptyState" style="display: none; text-align: center; padding: 60px 20px;">
+        <span class="material-icons" style="font-size: 80px; color: #ccc;">favorite_border</span>
+        <h3 style="color: #666; margin-top: 20px;">Nenhum favorito ainda</h3>
+        <p style="color: #999; margin-top: 10px;">Explore os restaurantes e adicione seus favoritos clicando no ❤️</p>
+        <a href="{% url 'puceats:index' %}" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background: #9CCC65; color: white; text-decoration: none; border-radius: 8px;">
+            Explorar Restaurantes
+        </a>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const favoritesGrid = document.getElementById('favoritesGrid');
+    const emptyState = document.getElementById('emptyState');
+    const favoritesCount = document.getElementById('favoritesCount');
+    
+    // Obter IDs dos favoritos do localStorage
+    const favorites = window.FavoritesManager ? window.FavoritesManager.getFavorites() : [];
+    
+    if (favorites.length === 0) {
+        // Mostrar estado vazio
+        favoritesGrid.style.display = 'none';
+        emptyState.style.display = 'block';
+        favoritesCount.textContent = 'Você ainda não tem favoritos';
+        return;
+    }
+    
+    // Atualizar contador
+    favoritesCount.textContent = `${favorites.length} ${favorites.length === 1 ? 'restaurante' : 'restaurantes'}`;
+    
+    // Fazer request com os IDs
+    const idsParam = favorites.join(',');
+    fetch(`/puceats/favoritos/?ids=${idsParam}`)
+        .then(response => response.text())
+        .then(html => {
+            // Criar um elemento temporário para parsear o HTML
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const serverGrid = doc.querySelector('.favorites-grid');
+            
+            if (serverGrid && serverGrid.innerHTML.trim()) {
+                favoritesGrid.innerHTML = serverGrid.innerHTML;
+            } else {
+                // Renderizar cards manualmente
+                renderFavorites(favorites);
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao carregar favoritos:', error);
+            renderFavorites(favorites);
+        });
+});
+
+function renderFavorites(favoriteIds) {
+    const grid = document.getElementById('favoritesGrid');
+    
+    // Buscar dados de cada restaurante
+    const promises = favoriteIds.map(id => 
+        fetch(`/puceats/api/restaurante/${id}/menu/`)
+            .then(r => r.json())
+            .catch(() => null)
+    );
+    
+    Promise.all(promises).then(restaurants => {
+        const validRestaurants = restaurants.filter(r => r && r.success !== false);
+        
+        if (validRestaurants.length === 0) {
+            grid.innerHTML = '<p style="text-align: center; padding: 40px;">Nenhum restaurante encontrado</p>';
+            return;
+        }
+        
+        grid.innerHTML = validRestaurants.map(restaurant => `
+            <article class="favorite-card" onclick="window.location.href='{% url 'puceats:index' %}'" style="cursor: pointer;">
+                <div class="card-image">
+                    ${restaurant.logo ? `<img src="${restaurant.logo}" alt="${restaurant.name}" />` : 
+                      `<div class="restaurant-placeholder"><span class="material-icons">restaurant</span></div>`}
+                    <button class="favorite-btn active" data-restaurant-id="${restaurant.id}" onclick="event.stopPropagation(); removeFavorite(${restaurant.id})">
+                        <span class="material-icons">favorite</span>
+                    </button>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">${restaurant.name}</h3>
+                    <p class="card-category">${restaurant.establishment_type || ''} ${restaurant.cuisine_type ? '• ' + restaurant.cuisine_type : ''}</p>
+                    ${restaurant.building ? `<p class="card-location"><span class="material-icons location-icon">place</span>${restaurant.building}</p>` : ''}
+                </div>
+            </article>
+        `).join('');
+    });
+}
+
+function removeFavorite(restaurantId) {
+    if (window.FavoritesManager) {
+        window.FavoritesManager.removeFavorite(restaurantId);
+        // Recarregar página após pequeno delay
+        setTimeout(() => {
+            window.location.reload();
+        }, 300);
+    }
+}
+</script>
+{% endblock %}
