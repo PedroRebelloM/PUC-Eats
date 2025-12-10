@@ -31,7 +31,7 @@
     <div id="emptyState" style="display: none; text-align: center; padding: 60px 20px;">
         <span class="material-icons" style="font-size: 80px; color: #ccc;">favorite_border</span>
         <h3 style="color: #666; margin-top: 20px;">Nenhum favorito ainda</h3>
-        <p style="color: #999; margin-top: 10px;">Explore os restaurantes e adicione seus favoritos clicando no ❤️</p>
+        <p style="color: #999; margin-top: 10px;">Explore os restaurantes e adicione seus favoritos clicando no coração</p>
         <a href="{% url 'puceats:index' %}" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background: #9CCC65; color: white; text-decoration: none; border-radius: 8px;">
             Explorar Restaurantes
         </a>
@@ -44,26 +44,38 @@ document.addEventListener('DOMContentLoaded', function() {
     const emptyState = document.getElementById('emptyState');
     const favoritesCount = document.getElementById('favoritesCount');
     
-    // Obter IDs dos favoritos do localStorage
     const favorites = window.FavoritesManager ? window.FavoritesManager.getFavorites() : [];
     
     if (favorites.length === 0) {
-        // Mostrar estado vazio
         favoritesGrid.style.display = 'none';
         emptyState.style.display = 'block';
         favoritesCount.textContent = 'Você ainda não tem favoritos';
         return;
     }
     
-    // Atualizar contador
     favoritesCount.textContent = `${favorites.length} ${favorites.length === 1 ? 'restaurante' : 'restaurantes'}`;
+    
+    // Event delegation para botões de favorito
+    favoritesGrid.addEventListener('click', function(e) {
+        const favoriteBtn = e.target.closest('.favorite-btn');
+        if (favoriteBtn) {
+            e.stopPropagation();
+            const restaurantId = parseInt(favoriteBtn.dataset.restaurantId);
+            removeFavorite(restaurantId);
+            return;
+        }
+        
+        const card = e.target.closest('.favorite-card');
+        if (card) {
+            window.location.href = '{% url "puceats:index" %}';
+        }
+    });
     
     // Fazer request com os IDs
     const idsParam = favorites.join(',');
     fetch(`/puceats/favoritos/?ids=${idsParam}`)
         .then(response => response.text())
         .then(html => {
-            // Criar um elemento temporário para parsear o HTML
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
             const serverGrid = doc.querySelector('.favorites-grid');
@@ -71,7 +83,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (serverGrid && serverGrid.innerHTML.trim()) {
                 favoritesGrid.innerHTML = serverGrid.innerHTML;
             } else {
-                // Renderizar cards manualmente
                 renderFavorites(favorites);
             }
         })
@@ -84,7 +95,6 @@ document.addEventListener('DOMContentLoaded', function() {
 function renderFavorites(favoriteIds) {
     const grid = document.getElementById('favoritesGrid');
     
-    // Buscar dados de cada restaurante
     const promises = favoriteIds.map(id => 
         fetch(`/puceats/api/restaurante/${id}/menu/`)
             .then(r => r.json())
@@ -100,11 +110,11 @@ function renderFavorites(favoriteIds) {
         }
         
         grid.innerHTML = validRestaurants.map(restaurant => `
-            <article class="favorite-card" onclick="window.location.href='{% url 'puceats:index' %}'" style="cursor: pointer;">
+            <article class="favorite-card" data-restaurant-id="${restaurant.id}" style="cursor: pointer;">
                 <div class="card-image">
                     ${restaurant.logo ? `<img src="${restaurant.logo}" alt="${restaurant.name}" />` : 
                       `<div class="restaurant-placeholder"><span class="material-icons">restaurant</span></div>`}
-                    <button class="favorite-btn active" data-restaurant-id="${restaurant.id}" onclick="event.stopPropagation(); removeFavorite(${restaurant.id})">
+                    <button class="favorite-btn active" data-restaurant-id="${restaurant.id}">
                         <span class="material-icons">favorite</span>
                     </button>
                 </div>
@@ -121,7 +131,6 @@ function renderFavorites(favoriteIds) {
 function removeFavorite(restaurantId) {
     if (window.FavoritesManager) {
         window.FavoritesManager.removeFavorite(restaurantId);
-        // Recarregar página após pequeno delay
         setTimeout(() => {
             window.location.reload();
         }, 300);

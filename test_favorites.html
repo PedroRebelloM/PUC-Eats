@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Favoritos</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+        .favorite-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: #f5f5f5;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 10px;
+        }
+        .favorite-btn.active .material-icons {
+            color: #E53935;
+        }
+        .favorites-badge {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #E53935;
+            color: white;
+            min-width: 20px;
+            height: 20px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 2px 6px;
+            margin-left: 10px;
+        }
+        .log {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #4CAF50;
+            padding-left: 10px;
+        }
+        button.test-btn {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste do Sistema de Favoritos</h1>
+
+    <div class="test-section">
+        <h2>1. LocalStorage</h2>
+        <p>Favoritos salvos: <strong id="savedFavorites">[]</strong></p>
+        <button class="test-btn" onclick="addTestFavorite(1)">Adicionar ID 1</button>
+        <button class="test-btn" onclick="addTestFavorite(2)">Adicionar ID 2</button>
+        <button class="test-btn" onclick="clearFavorites()">Limpar Todos</button>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Badge Visual</h2>
+        <p>
+            Favoritos 
+            <span class="favorites-badge" id="testBadge" style="display: none;">0</span>
+        </p>
+        <p>Status: <span id="badgeStatus">Verificando...</span></p>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Botões de Favoritar</h2>
+        <div>
+            <button class="favorite-btn" data-restaurant-id="1">
+                <span class="material-icons">favorite_border</span>
+            </button>
+            Restaurante 1
+        </div>
+        <div>
+            <button class="favorite-btn" data-restaurant-id="2">
+                <span class="material-icons">favorite_border</span>
+            </button>
+            Restaurante 2
+        </div>
+        <div>
+            <button class="favorite-btn" data-restaurant-id="3">
+                <span class="material-icons">favorite_border</span>
+            </button>
+            Restaurante 3
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Log de Eventos</h2>
+        <div class="log" id="logContainer">
+            <div class="log-entry">Sistema iniciado...</div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'pucEatsFavorites';
+
+        function log(message) {
+            const logContainer = document.getElementById('logContainer');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function getFavorites() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            return data ? JSON.parse(data) : [];
+        }
+
+        function saveFavorites(favorites) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(favorites));
+            updateDisplay();
+        }
+
+        function addTestFavorite(id) {
+            const favorites = getFavorites();
+            if (!favorites.includes(id)) {
+                favorites.push(id);
+                saveFavorites(favorites);
+                log(`✅ Adicionado ID ${id}`);
+            } else {
+                log(`ℹ️ ID ${id} já existe`);
+            }
+        }
+
+        function clearFavorites() {
+            localStorage.removeItem(STORAGE_KEY);
+            updateDisplay();
+            updateAllButtons();
+            log('🗑️ Favoritos limpos');
+        }
+
+        function updateDisplay() {
+            const favorites = getFavorites();
+            const count = favorites.length;
+            
+            // Atualizar texto
+            document.getElementById('savedFavorites').textContent = JSON.stringify(favorites);
+            
+            // Atualizar badge
+            const badge = document.getElementById('testBadge');
+            badge.textContent = count;
+            badge.style.display = count > 0 ? 'inline-flex' : 'none';
+            
+            // Atualizar status
+            const status = count > 0 ? `✅ Badge visível (${count})` : '❌ Badge oculto';
+            document.getElementById('badgeStatus').textContent = status;
+            
+            log(`📊 Display atualizado: ${count} favoritos`);
+        }
+
+        function updateAllButtons() {
+            const buttons = document.querySelectorAll('.favorite-btn');
+            const favorites = getFavorites();
+            
+            buttons.forEach(button => {
+                const id = parseInt(button.dataset.restaurantId);
+                const icon = button.querySelector('.material-icons');
+                
+                if (favorites.includes(id)) {
+                    button.classList.add('active');
+                    icon.textContent = 'favorite';
+                } else {
+                    button.classList.remove('active');
+                    icon.textContent = 'favorite_border';
+                }
+            });
+            
+            log(`🔄 ${buttons.length} botões atualizados`);
+        }
+
+        // Event delegation para botões
+        document.addEventListener('click', function(e) {
+            const button = e.target.closest('.favorite-btn');
+            if (button) {
+                const id = parseInt(button.dataset.restaurantId);
+                const favorites = getFavorites();
+                
+                if (favorites.includes(id)) {
+                    // Remover
+                    const index = favorites.indexOf(id);
+                    favorites.splice(index, 1);
+                    saveFavorites(favorites);
+                    log(`❌ Removido ID ${id}`);
+                } else {
+                    // Adicionar
+                    favorites.push(id);
+                    saveFavorites(favorites);
+                    log(`✅ Adicionado ID ${id}`);
+                }
+                
+                updateAllButtons();
+            }
+        });
+
+        // Inicializar
+        log('🎯 Sistema inicializado');
+        updateDisplay();
+        updateAllButtons();
+
+        // Verificar se FavoritesManager está disponível
+        if (typeof FavoritesManager !== 'undefined') {
+            log('✅ FavoritesManager detectado');
+        } else {
+            log('⚠️ FavoritesManager NÃO detectado');
+        }
+    </script>
+</body>
+</html>

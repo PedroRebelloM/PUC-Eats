@@ -1,13 +1,9 @@
-/**
- * Sistema de Favoritos - PUC Eats
- * Gerencia favoritos usando localStorage do navegador
- */
+
 
 const FavoritesManager = {
     STORAGE_KEY: 'pucEatsFavorites',
 
     /**
-     * Obter todos os IDs de restaurantes favoritos
      * @returns {Array<number>} Array de IDs
      */
     getFavorites() {
@@ -43,7 +39,6 @@ const FavoritesManager = {
     },
 
     /**
-     * Adicionar restaurante aos favoritos
      * @param {number} restaurantId - ID do restaurante
      * @returns {boolean} true se adicionado com sucesso
      */
@@ -191,6 +186,9 @@ const FavoritesManager = {
         document.addEventListener('click', (e) => {
             const button = e.target.closest('.favorite-btn');
             if (button) {
+                e.preventDefault();
+                e.stopPropagation();
+                
                 const restaurantId = button.getAttribute('data-restaurant-id');
                 if (restaurantId) {
                     const isFavorite = this.toggleFavorite(restaurantId);
