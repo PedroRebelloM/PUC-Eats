@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Restaurant, Dish, Category, Token
+from .models import Restaurant, Dish, Category, Token, Marker
 
 
 @admin.register(Restaurant)
@@ -33,4 +33,12 @@ class TokenAdmin(admin.ModelAdmin):
     list_filter = ['is_used']
     search_fields = ['code', 'used_by__username']
     readonly_fields = ['code', 'created_at', 'used_at']
+    list_per_page = 20
+
+@admin.register(Marker)
+class MarkerAdmin(admin.ModelAdmin):
+    list_display = ['name', 'restaurant', 'marker_type', 'latitude', 'longitude', 'is_active']
+    list_filter = ['marker_type', 'is_active']
+    search_fields = ['name', 'restaurant__name', 'description']
+    list_editable = ['is_active']
     list_per_page = 20
