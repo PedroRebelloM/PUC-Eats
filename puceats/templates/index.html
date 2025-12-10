@@ -23,7 +23,7 @@
 
             <div class="restaurant-list">
                 {% for restaurant in restaurants %}
-                <div class="restaurant-item" onclick="openRestaurantModal({{ restaurant.id }})">
+                <div class="restaurant-item" onclick="handleRestaurantClick(event, {{ restaurant.id }})">
                     <div class="restaurant-image">
                         {% if restaurant.logo %}
                         <img src="{{ restaurant.logo.url }}" alt="{{ restaurant.name }}">
@@ -38,12 +38,21 @@
                         <p class="restaurant-location">{{ restaurant.building|default:"Campus PUC" }}</p>
                         <p class="restaurant-cuisine">{{ restaurant.get_cuisine_type_display }}</p>
                     </div>
+                    <button class="favorite-btn" data-restaurant-id="{{ restaurant.id }}" title="Adicionar aos favoritos">
+                        <span class="material-icons">favorite_border</span>
+                    </button>
                 </div>
                 {% empty %}
                 <p style="text-align: center; color: #666; padding: 20px;">
                     Nenhum restaurante cadastrado ainda.
                 </p>
                 {% endfor %}
+                
+                <div id="noResultsMessage" style="display: none; text-align: center; padding: 40px; color: #666;">
+                    <span class="material-icons" style="font-size: 48px; color: #ccc;">search_off</span>
+                    <p style="margin-top: 12px; font-size: 16px;">Nenhum restaurante encontrado</p>
+                    <p style="margin-top: 8px; font-size: 14px; color: #999;">Tente buscar por outro termo</p>
+                </div>
             </div>
         </aside>
     </div>
@@ -52,9 +61,14 @@
         <div class="restaurant-modal-content">
             <div class="restaurant-modal-header">
                 <h2 id="modalRestaurantName">Carregando...</h2>
-                <button class="restaurant-modal-close" onclick="closeRestaurantModal()">
-                    <span class="material-icons">close</span>
-                </button>
+                <div class="modal-header-actions">
+                    <button class="favorite-btn modal-favorite-btn" data-restaurant-id="" title="Adicionar aos favoritos">
+                        <span class="material-icons">favorite_border</span>
+                    </button>
+                    <button class="restaurant-modal-close" onclick="closeRestaurantModal()">
+                        <span class="material-icons">close</span>
+                    </button>
+                </div>
             </div>
             <div class="restaurant-modal-body" id="modalRestaurantBody">
                 <p style="text-align: center; padding: 20px;">Carregando cardápio...</p>
@@ -83,34 +97,166 @@
         
         const map = L.map('map', {
             center: pucRio,
-            zoom: 15,
-            minZoom: 18,
-            maxZoom: 22,
-            maxBounds: [
-                [-22.9894, -43.2429],
-                [-22.9694, -43.2229]
-            ],
-            maxBoundsViscosity: 1.0
+            zoom: 17,
+            minZoom: 15,
+            maxZoom: 18
         });
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: ''
         }).addTo(map);
 
-        const customIcon = L.divIcon({
-            className: 'custom-marker',
-            html: '<div style="background-color: #9CCC65; width: 30px; height: 30px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"><div style="width: 10px; height: 10px; background-color: white; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(45deg);"></div></div>',
-            iconSize: [30, 30],
-            iconAnchor: [15, 30]
+        // Organizar restaurantes por prédio
+        const restaurantsByBuilding = {
+            'Cardeal Leme': [],
+            'Kennedy': [],
+            'Outros': []
+        };
+
+        {% for restaurant in restaurants %}
+        {
+            const building = "{{ restaurant.building|default:'Outros' }}";
+            const restaurantData = {
+                id: {{ restaurant.id }},
+                name: "{{ restaurant.name|escapejs }}",
+                cuisine: "{{ restaurant.get_cuisine_type_display|escapejs }}",
+                building: building,
+                logo: {% if restaurant.logo %}"{{ restaurant.logo.url }}"{% else %}""{% endif %}
+            };
+            
+            if (building.includes('Cardeal Leme') || building.includes('Leme')) {
+                restaurantsByBuilding['Cardeal Leme'].push(restaurantData);
+            } else if (building.includes('Kennedy')) {
+                restaurantsByBuilding['Kennedy'].push(restaurantData);
+            } else {
+                restaurantsByBuilding['Outros'].push(restaurantData);
+            }
+        }
+        {% endfor %}
+
+        // Coordenadas dos prédios
+        const buildingCoords = {
+            'Cardeal Leme': [-22.979905626939328, -43.232694849620536],
+            'Kennedy': [-22.97899690169501, -43.23253928152602]
+        };
+
+        // Criar ícone de cluster
+        function createClusterIcon(count, building) {
+            const color = building === 'Cardeal Leme' ? '#FF6B6B' : '#4ECDC4';
+            return L.divIcon({
+                className: 'cluster-marker',
+                html: `<div style="background-color: ${color}; width: 45px; height: 45px; border-radius: 50%; border: 4px solid white; box-shadow: 0 3px 10px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 16px; cursor: pointer;">${count}</div>`,
+                iconSize: [45, 45],
+                iconAnchor: [22.5, 22.5]
+            });
+        }
+
+        // Adicionar clusters nos prédios
+        ['Cardeal Leme', 'Kennedy'].forEach(building => {
+            const restaurants = restaurantsByBuilding[building];
+            if (restaurants.length > 0) {
+                const marker = L.marker(buildingCoords[building], {
+                    icon: createClusterIcon(restaurants.length, building)
+                }).addTo(map);
+
+                marker.on('click', function() {
+                    showClusterPanel(building, restaurants);
+                });
+            }
         });
 
-        L.marker(pucRio, {icon: customIcon}).addTo(map)
-            .bindPopup('PUC-Rio');
+        // Função para mostrar painel com restaurantes do cluster
+        function showClusterPanel(building, restaurants) {
+            // Criar overlay
+            let overlay = document.getElementById('clusterOverlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'clusterOverlay';
+                overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9998; display: none;';
+                document.body.appendChild(overlay);
+                
+                overlay.addEventListener('click', function() {
+                    closeClusterPanel();
+                });
+            }
+
+            // Criar painel
+            let panel = document.getElementById('clusterPanel');
+            if (!panel) {
+                panel = document.createElement('div');
+                panel.id = 'clusterPanel';
+                panel.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 9999; max-width: 500px; width: 90%; max-height: 80vh; overflow: hidden; display: none;';
+                document.body.appendChild(panel);
+            }
+
+            let html = `
+                <div style="background: linear-gradient(135deg, #9CCC65 0%, #8BC34A 100%); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="margin: 0; font-size: 24px;">${building}</h2>
+                        <p style="margin: 4px 0 0 0; opacity: 0.9;">${restaurants.length} ${restaurants.length === 1 ? 'restaurante' : 'restaurantes'}</p>
+                    </div>
+                    <button onclick="closeClusterPanel()" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 24px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">×</button>
+                </div>
+                <div style="padding: 20px; overflow-y: auto; max-height: calc(80vh - 100px);">
+            `;
+
+            restaurants.forEach(restaurant => {
+                html += `
+                    <div onclick="openRestaurantModal(${restaurant.id}); closeClusterPanel();" style="display: flex; gap: 16px; padding: 16px; border-radius: 12px; cursor: pointer; transition: background 0.2s; margin-bottom: 12px; border: 1px solid #e0e0e0;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
+                        ${restaurant.logo ? 
+                            `<img src="${restaurant.logo}" alt="${restaurant.name}" style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover;">` :
+                            `<div style="width: 60px; height: 60px; min-width: 60px; border-radius: 8px; background: #f5f5f5; display: flex; align-items: center; justify-content: center;">
+                                <span class="material-icons" style="color: #9CCC65; font-size: 32px;">restaurant</span>
+                            </div>`
+                        }
+                        <div style="flex: 1;">
+                            <h3 style="margin: 0 0 4px 0; font-size: 16px; color: #333;">${restaurant.name}</h3>
+                            <p style="margin: 0; font-size: 14px; color: #666;">${restaurant.cuisine}</p>
+                            <p style="margin: 4px 0 0 0; font-size: 12px; color: #999;">${restaurant.building}</p>
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <span class="material-icons" style="color: #9CCC65;">chevron_right</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+            
+            panel.innerHTML = html;
+            overlay.style.display = 'block';
+            panel.style.display = 'block';
+        }
+
+        function closeClusterPanel() {
+            const overlay = document.getElementById('clusterOverlay');
+            const panel = document.getElementById('clusterPanel');
+            if (overlay) overlay.style.display = 'none';
+            if (panel) panel.style.display = 'none';
+        }
+
+        function handleRestaurantClick(event, restaurantId) {
+            // Verificar se o clique foi no botão de favorito ou dentro dele
+            if (event.target.closest('.favorite-btn')) {
+                return; // Não abrir o modal
+            }
+            openRestaurantModal(restaurantId);
+        }
 
         function openRestaurantModal(restaurantId) {
             const modal = document.getElementById('restaurantModal');
             const modalTitle = document.getElementById('modalRestaurantName');
             const modalBody = document.getElementById('modalRestaurantBody');
+            const modalFavoriteBtn = modal.querySelector('.modal-favorite-btn');
+            
+            // Atualizar ID do restaurante no botão de favoritar do modal
+            if (modalFavoriteBtn) {
+                modalFavoriteBtn.setAttribute('data-restaurant-id', restaurantId);
+                // Atualizar estado visual do botão
+                if (window.FavoritesManager) {
+                    window.FavoritesManager.updateButton(modalFavoriteBtn, restaurantId);
+                }
+            }
             
             // Mostrar loading
             modalTitle.textContent = 'Carregando...';
@@ -378,6 +524,175 @@
                 closeDishDetailModal();
             }
         });
+
+        // Sistema de Busca de Restaurantes e Pratos
+        const searchInputDesktop = document.getElementById('restaurantSearchInput');
+        const searchInputMobile = document.getElementById('restaurantSearchInputMobile');
+        const clearBtnDesktop = document.getElementById('searchClearBtn');
+        const clearBtnMobile = document.getElementById('searchClearBtnMobile');
+        
+        // Cache para armazenar dados dos pratos
+        const dishesCache = {};
+
+        async function fetchRestaurantDishes(restaurantId) {
+            if (dishesCache[restaurantId]) {
+                return dishesCache[restaurantId];
+            }
+
+            try {
+                const response = await fetch(`/puceats/api/restaurante/${restaurantId}/menu/`);
+                const data = await response.json();
+                
+                if (data.success && data.dishes) {
+                    dishesCache[restaurantId] = data.dishes;
+                    return data.dishes;
+                }
+            } catch (error) {
+                console.error(`Erro ao buscar pratos do restaurante ${restaurantId}:`, error);
+            }
+            
+            return [];
+        }
+
+        // Função para remover acentos e normalizar texto
+        function normalizeText(text) {
+            return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        }
+
+        // Função de match melhorada
+        function smartMatch(text, searchTerms) {
+            const normalizedText = normalizeText(text);
+            
+            // Verificar se todas as palavras do termo de busca estão presentes
+            return searchTerms.every(term => normalizedText.includes(term));
+        }
+
+        async function filterRestaurants(searchTerm) {
+            const term = searchTerm.trim();
+            const restaurantItems = document.querySelectorAll('.restaurant-item');
+            let visibleCount = 0;
+
+            if (term === '') {
+                // Sem termo de busca, mostrar todos
+                restaurantItems.forEach(item => {
+                    item.style.display = 'flex';
+                    const badge = item.querySelector('.search-match-badge');
+                    if (badge) badge.remove();
+                });
+                
+                const noResultsMsg = document.getElementById('noResultsMessage');
+                if (noResultsMsg) {
+                    noResultsMsg.style.display = 'none';
+                }
+                return;
+            }
+
+            // Dividir termo em palavras e normalizar
+            const searchTerms = normalizeText(term).split(/\s+/).filter(t => t.length > 0);
+
+            // Processar cada restaurante
+            const promises = Array.from(restaurantItems).map(async (item) => {
+                const name = item.querySelector('.restaurant-name')?.textContent || '';
+                const cuisine = item.querySelector('.restaurant-cuisine')?.textContent || '';
+                const location = item.querySelector('.restaurant-location')?.textContent || '';
+
+                // Verificar match nos dados do restaurante
+                const restaurantMatch = smartMatch(name, searchTerms) || 
+                                       smartMatch(cuisine, searchTerms) || 
+                                       smartMatch(location, searchTerms);
+
+                // Buscar nos pratos
+                const restaurantId = item.getAttribute('onclick')?.match(/\d+/)?.[0];
+                let dishMatch = false;
+                let matchedDish = null;
+                let matchCount = 0;
+
+                if (restaurantId) {
+                    const dishes = await fetchRestaurantDishes(restaurantId);
+                    for (const dish of dishes) {
+                        const dishName = dish.name || '';
+                        const dishDesc = dish.description || '';
+                        
+                        if (smartMatch(dishName, searchTerms) || smartMatch(dishDesc, searchTerms)) {
+                            dishMatch = true;
+                            matchCount++;
+                            if (!matchedDish) {
+                                matchedDish = dish.name;
+                            }
+                        }
+                    }
+                }
+
+                // Remover badge anterior se existir
+                const oldBadge = item.querySelector('.search-match-badge');
+                if (oldBadge) oldBadge.remove();
+
+                // Mostrar/ocultar restaurante
+                if (restaurantMatch || dishMatch) {
+                    item.style.display = 'flex';
+                    visibleCount++;
+
+                    // Adicionar badge se o match foi por prato
+                    if (dishMatch && !restaurantMatch) {
+                        const badge = document.createElement('span');
+                        badge.className = 'search-match-badge';
+                        if (matchCount === 1) {
+                            badge.innerHTML = `<span class="material-icons">restaurant_menu</span> ${matchedDish}`;
+                        } else {
+                            badge.innerHTML = `<span class="material-icons">restaurant_menu</span> ${matchCount} pratos encontrados`;
+                        }
+                        item.querySelector('.restaurant-info').appendChild(badge);
+                    }
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            await Promise.all(promises);
+
+            const noResultsMsg = document.getElementById('noResultsMessage');
+            if (noResultsMsg) {
+                noResultsMsg.style.display = visibleCount === 0 ? 'block' : 'none';
+            }
+        }
+
+        function toggleClearButton(input, clearBtn) {
+            if (clearBtn) {
+                clearBtn.style.display = input.value.length > 0 ? 'flex' : 'none';
+            }
+        }
+
+        if (searchInputDesktop) {
+            searchInputDesktop.addEventListener('input', function(e) {
+                filterRestaurants(e.target.value);
+                toggleClearButton(searchInputDesktop, clearBtnDesktop);
+            });
+        }
+
+        if (searchInputMobile) {
+            searchInputMobile.addEventListener('input', function(e) {
+                filterRestaurants(e.target.value);
+                toggleClearButton(searchInputMobile, clearBtnMobile);
+            });
+        }
+
+        if (clearBtnDesktop) {
+            clearBtnDesktop.addEventListener('click', function() {
+                searchInputDesktop.value = '';
+                filterRestaurants('');
+                toggleClearButton(searchInputDesktop, clearBtnDesktop);
+                searchInputDesktop.focus();
+            });
+        }
+
+        if (clearBtnMobile) {
+            clearBtnMobile.addEventListener('click', function() {
+                searchInputMobile.value = '';
+                filterRestaurants('');
+                toggleClearButton(searchInputMobile, clearBtnMobile);
+                searchInputMobile.focus();
+            });
+        }
 
 </script>
 {% endblock %}

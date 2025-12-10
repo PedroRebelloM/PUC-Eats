@@ -188,7 +188,25 @@ def esqueci_senha(request):
     return render(request, 'EsqueciMinhaSenha.html')
 
 def favoritos(request):
-    return render(request, 'Favoritos.html')
+    """View de favoritos - busca restaurantes por IDs do localStorage"""
+    ids_param = request.GET.get('ids', '')
+    restaurants = []
+    
+    if ids_param:
+        try:
+            # Converter string "1,2,3" em lista de inteiros
+            ids = [int(id.strip()) for id in ids_param.split(',') if id.strip().isdigit()]
+            if ids:
+                # Buscar restaurantes pelos IDs
+                restaurants = Restaurant.objects.filter(id__in=ids)
+        except (ValueError, AttributeError):
+            pass
+    
+    context = {
+        'restaurants': restaurants,
+        'has_favorites': len(restaurants) > 0
+    }
+    return render(request, 'Favoritos.html', context)
 
 def logout(request):
     """View para fazer logout do usuário"""

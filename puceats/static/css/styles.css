@@ -92,6 +92,32 @@ body {
     font-size: 20px;
 }
 
+.search-clear-btn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.search-clear-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #666;
+}
+
+.search-clear-btn .material-icons {
+    font-size: 18px;
+}
+
 .search-input {
     width: 100%;
     padding: 10px 12px 10px 44px;
@@ -228,6 +254,7 @@ body {
     border-bottom: 1px solid #f0f0f0;
     cursor: pointer;
     transition: background-color 0.2s;
+    position: relative;
 }
 
 .restaurant-item:hover {
@@ -292,6 +319,75 @@ body {
     font-size: 11px;
     color: #666;
     margin: 0;
+}
+
+/* Badge de match de busca */
+.search-match-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #E8F5E9;
+    color: #2E7D32;
+    font-size: 10px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    margin-top: 4px;
+    font-weight: 500;
+}
+
+.search-match-badge .material-icons {
+    font-size: 12px;
+}
+
+/* Botão de Favoritar */
+.favorite-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.95);
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+}
+
+.favorite-btn .material-icons {
+    font-size: 18px;
+    color: #757575;
+    transition: color 0.2s ease;
+}
+
+.favorite-btn:hover {
+    transform: scale(1.1);
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+}
+
+.favorite-btn.active .material-icons {
+    color: #E53935;
+}
+
+.favorite-btn:active {
+    transform: scale(0.95);
+}
+
+/* Animação de heartbeat */
+@keyframes heartbeat {
+    0%, 100% { transform: scale(1); }
+    25% { transform: scale(1.2); }
+    50% { transform: scale(1.1); }
+    75% { transform: scale(1.25); }
+}
+
+.favorite-btn.heartbeat {
+    animation: heartbeat 0.6s ease;
 }
 
 #map {
@@ -403,6 +499,7 @@ body {
     color: #333;
     text-decoration: none;
     transition: background-color 0.2s;
+    position: relative;
 }
 
 .item .material-icons {
@@ -420,6 +517,26 @@ body {
 
 .item.active .material-icons {
     color: #9CCC65;
+}
+
+/* Badge de contador de favoritos */
+.favorites-badge {
+    position: absolute;
+    top: 8px;
+    left: 24px;
+    background: #E53935;
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 5;
 }
 
 /* Toast Notification Styles */
@@ -599,6 +716,19 @@ body {
     font-size: 24px;
     color: #333;
     font-weight: 600;
+    flex: 1;
+}
+
+.modal-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.modal-favorite-btn {
+    position: static;
+    width: 36px;
+    height: 36px;
 }
 
 .restaurant-modal-close {

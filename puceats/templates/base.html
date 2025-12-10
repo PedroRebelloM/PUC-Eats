@@ -36,6 +36,7 @@
             <a href="{% url 'puceats:favoritos' %}" class="item {% block nav_favoritos %}{% endblock %}">
                 <span class="material-icons">favorite_border</span>
                 <span>Favoritos</span>
+                <span class="favorites-badge" style="display: none;">0</span>
             </a>
         </nav>
 
@@ -79,7 +80,10 @@
             <div class="header-center">
                 <div class="search-wrapper">
                     <span class="material-icons search-icon-left">search</span>
-                    <input type="text" class="search-input" placeholder="{% block search_placeholder %}Buscar restaurantes, pratos...{% endblock %}">
+                    <input type="text" class="search-input" id="restaurantSearchInput" placeholder="{% block search_placeholder %}Buscar restaurantes...{% endblock %}">
+                    <button class="search-clear-btn" id="searchClearBtn" style="display: none;">
+                        <span class="material-icons">close</span>
+                    </button>
                 </div>
             </div>
 
@@ -97,7 +101,10 @@
         <div class="search-mobile" id="searchMobile">
             <div class="search-wrapper">
                 <span class="material-icons search-icon-left">search</span>
-                <input type="text" class="search-input" placeholder="{% block search_placeholder_mobile %}Buscar restaurantes, pratos...{% endblock %}">
+                <input type="text" class="search-input" id="restaurantSearchInputMobile" placeholder="{% block search_placeholder_mobile %}Buscar restaurantes...{% endblock %}">
+                <button class="search-clear-btn" id="searchClearBtnMobile" style="display: none;">
+                    <span class="material-icons">close</span>
+                </button>
             </div>
         </div>
     </header>
@@ -196,5 +203,8 @@
             }
         });
     </script>
+    
+    <!-- Sistema de Favoritos -->
+    <script src="{% static 'js/favorites.js' %}"></script>
 </body>
 </html>
