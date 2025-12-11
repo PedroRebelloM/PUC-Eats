@@ -1,7 +1,9 @@
-(function(){
+document.addEventListener('DOMContentLoaded', function() {
   const body = document.body;
   const openers = document.querySelectorAll('[data-modal-target]');
   let lastFocused = null;
+  
+  console.log('app.js loaded, found', openers.length, 'modal openers');
 
   function openModal(modal){
     if(!modal) return;
@@ -61,6 +63,9 @@
   const campoUpload = document.getElementById('campoImagemUpload');
 
   function updateImageChoice(){
+    // Verifica se os elementos existem antes de manipulá-los
+    if(!grupoUrl || !grupoUpload || !campoUrl || !campoUpload) return;
+    
     const choice = document.querySelector('[data-image-choice]:checked');
     if(!choice) return;
     const val = choice.value;
@@ -89,7 +94,9 @@
   }
 
   imageChoiceInputs.forEach(inp => inp.addEventListener('change', updateImageChoice));
-  updateImageChoice();
+  if(imageChoiceInputs.length > 0) {
+    updateImageChoice();
+  }
 
   // Intercepta o envio do formulário
   const form = document.getElementById('dishForm');
@@ -103,7 +110,7 @@
       
       // Remove atributo required dos campos desabilitados antes de enviar
       const tipoImagemSelecionado = document.querySelector('[data-image-choice]:checked');
-      if(tipoImagemSelecionado && tipoImagemSelecionado.value === 'nenhuma'){
+      if(tipoImagemSelecionado && tipoImagemSelecionado.value === 'nenhuma' && campoUrl && campoUpload){
         campoUrl.removeAttribute('required');
         campoUpload.removeAttribute('required');
         // Remove o name para que não sejam enviados
@@ -120,9 +127,9 @@
         formData.append('dish_id', dishId);
       }
       
-      // Restaura os names
-      if(!campoUrl.hasAttribute('name')) campoUrl.setAttribute('name', 'imagemUrl');
-      if(!campoUpload.hasAttribute('name')) campoUpload.setAttribute('name', 'imagemArquivo');
+      // Restaura os names se os campos existirem
+      if(campoUrl && !campoUrl.hasAttribute('name')) campoUrl.setAttribute('name', 'imagemUrl');
+      if(campoUpload && !campoUpload.hasAttribute('name')) campoUpload.setAttribute('name', 'imagemArquivo');
       
       try {
         const response = await fetch(form.action || window.location.href, {
@@ -275,4 +282,4 @@
       }
     });
   });
-})();
+});

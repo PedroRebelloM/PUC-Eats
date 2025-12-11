@@ -75,10 +75,6 @@
                             <span class="material-icons me-1" style="font-size: 18px;">arrow_back</span>
                             <span class="d-none d-md-inline">Voltar</span>
                         </a>
-                        <a href="{% url 'puceats:crud-restaurantes' %}" class="btn btn-outline-primary d-inline-flex align-items-center">
-                            <span class="material-icons me-1" style="font-size: 18px;">store</span>
-                            <span class="d-none d-md-inline">Restaurantes</span>
-                        </a>
                         <a id="abrirModalAdicionar" class="btn btn-success d-inline-flex align-items-center" href="#adicionarModal">
                             <span class="material-icons me-1" style="font-size: 18px;">add</span>
                             <span>Adicionar Prato</span>
@@ -313,16 +309,19 @@
         <!-- Modal Novo Restaurante -->
         <div class="modalContainer" id="novoRestauranteModal" aria-hidden="true">
             <div class="modalContent" role="dialog" aria-labelledby="tituloNovoRestaurante" aria-modal="true">
-                <div class="modalHeader">
-                    <h2 id="tituloNovoRestaurante" class="modalTitle">
-                        <span class="material-icons me-2">add_business</span>
-                        Criar Novo Restaurante
-                    </h2>
+                <div class="modal-header-custom mb-4">
+                    <div>
+                        <h2 id="tituloNovoRestaurante" class="modal-title-custom mb-1">
+                            <span class="material-icons me-2">add_business</span>
+                            Criar Novo Restaurante
+                        </h2>
+                        <p class="modal-subtitle-custom mb-0">Preencha os dados completos do estabelecimento</p>
+                    </div>
                     <button type="button" class="btn-close-custom" aria-label="Fechar" data-modal-close>
                         <span class="material-icons">close</span>
                     </button>
                 </div>
-                <form method="post" action="{% url 'puceats:add_restaurant' %}" novalidate id="restaurantForm">
+                <form method="post" action="{% url 'puceats:add_restaurant' %}" enctype="multipart/form-data" novalidate id="restaurantForm">
                     {% csrf_token %}
                     <div class="row g-3">
                         <div class="col-12">
@@ -334,22 +333,110 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Token -->
                         <div class="col-12">
-                            <label for="campoToken" class="form-label">Token de Autorização</label>
+                            <label for="campoToken" class="form-label">Token de Autorização *</label>
                             <input type="text" class="form-control" id="campoToken" name="token" placeholder="Digite o token" required />
                         </div>
-                        <div class="col-12">
-                            <label for="campoNomeRestaurante" class="form-label">Nome do Restaurante</label>
+                        
+                        <!-- Informações Básicas -->
+                        <div class="col-12"><hr class="my-2"><h6 class="text-muted small mb-0">Informações Básicas</h6></div>
+                        
+                        <div class="col-12 col-md-8">
+                            <label for="campoNomeRestaurante" class="form-label">Nome do Restaurante *</label>
                             <input type="text" class="form-control" id="campoNomeRestaurante" name="nome_restaurante" placeholder="Ex.: Pizzaria Bella" required />
                         </div>
-                        <div class="col-12">
-                            <label for="campoTipoEstabelecimento" class="form-label">Tipo de Estabelecimento</label>
+                        
+                        <div class="col-12 col-md-4">
+                            <label for="campoTipoEstabelecimento" class="form-label">Tipo *</label>
                             <select class="form-select" id="campoTipoEstabelecimento" name="establishment_type" required>
                                 <option value="" selected disabled>Selecione...</option>
                                 <option value="restaurante">Restaurante</option>
                                 <option value="lanchonete">Lanchonete</option>
                                 <option value="barraca">Barraca</option>
                             </select>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="campoDescricaoRestaurante" class="form-label">Descrição</label>
+                            <textarea class="form-control" id="campoDescricaoRestaurante" name="description" rows="2" placeholder="Descreva o restaurante..."></textarea>
+                        </div>
+                        
+                        <div class="col-12 col-md-8">
+                            <label for="campoCuisineType" class="form-label">Tipo de Cozinha</label>
+                            <select class="form-select" id="campoCuisineType" name="cuisine_type">
+                                <option value="outros" selected>Outros</option>
+                                <option value="brasileira">Brasileira</option>
+                                <option value="japonesa">Japonesa</option>
+                                <option value="italiana">Italiana</option>
+                                <option value="árabe">Árabe</option>
+                                <option value="vegana">Vegana</option>
+                                <option value="cafeteria">Cafeteria</option>
+                                <option value="lanches">Lanches</option>
+                                <option value="internacional">Internacional</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-12 col-md-4">
+                            <label for="campoPriceLevel" class="form-label">Nível de Preço</label>
+                            <select class="form-select" id="campoPriceLevel" name="price_level">
+                                <option value="1">$ - Econômico</option>
+                                <option value="2">$$ - Moderado</option>
+                                <option value="3" selected>$$$ - Médio</option>
+                                <option value="4">$$$$ - Caro</option>
+                                <option value="5">$$$$$ - Muito Caro</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Localização -->
+                        <div class="col-12"><hr class="my-2"><h6 class="text-muted small mb-0">Localização</h6></div>
+                        
+                        <div class="col-12">
+                            <label for="campoBuilding" class="form-label">Prédio/Localização</label>
+                            <input type="text" class="form-control" id="campoBuilding" name="building" placeholder="Ex.: Cardeal Leme, Kennedy, Pilotis..." />
+                        </div>
+                        
+                        <div class="col-12 col-md-6">
+                            <label for="campoLatitude" class="form-label">Latitude</label>
+                            <input type="number" class="form-control" id="campoLatitude" name="latitude" step="0.00001" placeholder="-22.97945" />
+                        </div>
+                        
+                        <div class="col-12 col-md-6">
+                            <label for="campoLongitude" class="form-label">Longitude</label>
+                            <input type="number" class="form-control" id="campoLongitude" name="longitude" step="0.00001" placeholder="-43.23305" />
+                        </div>
+                        
+                        <!-- Contato e Redes Sociais -->
+                        <div class="col-12"><hr class="my-2"><h6 class="text-muted small mb-0">Contato e Redes Sociais</h6></div>
+                        
+                        <div class="col-12 col-md-6">
+                            <label for="campoPhone" class="form-label">Telefone</label>
+                            <input type="tel" class="form-control" id="campoPhone" name="phone" placeholder="(21) 99999-9999" />
+                        </div>
+                        
+                        <div class="col-12 col-md-6">
+                            <label for="campoOpeningHours" class="form-label">Horário de Funcionamento</label>
+                            <input type="text" class="form-control" id="campoOpeningHours" name="opening_hours" placeholder="Seg-Sex 8h-22h" />
+                        </div>
+                        
+                        <div class="col-12 col-md-6">
+                            <label for="campoInstagram" class="form-label">Instagram</label>
+                            <input type="url" class="form-control" id="campoInstagram" name="instagram" placeholder="https://instagram.com/..." />
+                        </div>
+                        
+                        <div class="col-12 col-md-6">
+                            <label for="campoWebsite" class="form-label">Website</label>
+                            <input type="url" class="form-control" id="campoWebsite" name="website" placeholder="https://..." />
+                        </div>
+                        
+                        <!-- Logo -->
+                        <div class="col-12"><hr class="my-2"><h6 class="text-muted small mb-0">Logo (Opcional)</h6></div>
+                        
+                        <div class="col-12">
+                            <label for="campoLogoRestaurante" class="form-label">Upload do Logo</label>
+                            <input type="file" class="form-control" id="campoLogoRestaurante" name="logo" accept="image/*" />
+                            <small class="form-text text-muted">Formatos aceitos: JPG, PNG, GIF. Tamanho máximo: 5MB</small>
                         </div>
                     </div>
                     <div class="d-flex justify-content-end gap-2 mt-4">
@@ -494,8 +581,11 @@
                 // Mudar título do modal
                 document.getElementById('tituloAdicionarItem').textContent = 'Editar Item';
                 
-                // Abrir modal
-                openModal();
+                // Abrir modal usando a estrutura do app.js
+                const modal = document.getElementById('adicionarModal');
+                modal.classList.add('isOpen');
+                modal.setAttribute('aria-hidden', 'false');
+                document.body.classList.add('modalOpen');
             }
 
             // Submit do formulário
@@ -519,7 +609,12 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        closeModal();
+                        // Fechar modal usando a estrutura do app.js
+                        const modal = document.getElementById('adicionarModal');
+                        modal.classList.remove('isOpen');
+                        modal.setAttribute('aria-hidden', 'true');
+                        document.body.classList.remove('modalOpen');
+                        
                         alert(dishId ? 'Prato atualizado com sucesso!' : 'Prato adicionado com sucesso!');
                         window.location.reload();
                     } else {
@@ -538,35 +633,12 @@
                 document.getElementById('dishForm').reset();
                 document.getElementById('dishId').value = '';
                 document.getElementById('tituloAdicionarItem').textContent = 'Adicionar Novo Item';
-                openModal();
-            });
-
-            // Funções para controlar o modal
-            function openModal() {
+                
+                // Abrir o modal usando a estrutura do app.js
                 const modal = document.getElementById('adicionarModal');
                 modal.classList.add('isOpen');
+                modal.setAttribute('aria-hidden', 'false');
                 document.body.classList.add('modalOpen');
-            }
-
-            function closeModal() {
-                const modal = document.getElementById('adicionarModal');
-                modal.classList.remove('isOpen');
-                document.body.classList.remove('modalOpen');
-            }
-
-            // Fechar modal ao clicar no backdrop ou botão fechar
-            document.querySelectorAll('[data-modal-close]').forEach(element => {
-                element.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    closeModal();
-                });
-            });
-
-            // Fechar modal ao pressionar ESC
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    closeModal();
-                }
             });
 
             // Filtro de busca

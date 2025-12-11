@@ -28,8 +28,6 @@ urlpatterns = [
     path('crud/dish/<int:dish_id>/delete/', views.dish_delete, name='dish-delete'),
     
     # CRUD Restaurantes
-    path('crud/restaurantes/', views.crud_restaurantes, name='crud-restaurantes'),
-    path('crud/restaurant/add/', views.restaurant_add, name='restaurant-add'),
     path('crud/restaurant/<int:restaurant_id>/edit/', views.restaurant_edit, name='restaurant-edit'),
     path('crud/restaurant/<int:restaurant_id>/delete/', views.restaurant_delete, name='restaurant-delete'),
     

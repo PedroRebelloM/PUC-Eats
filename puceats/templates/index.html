@@ -23,7 +23,7 @@
 
             <div class="restaurant-list">
                 {% for restaurant in restaurants %}
-                <div class="restaurant-item" onclick="handleRestaurantClick(event, {{ restaurant.id }})">
+                <div class="restaurant-item" data-restaurant-id="{{ restaurant.id }}" onclick="handleRestaurantClick(event, {{ restaurant.id }})">
                     <div class="restaurant-image">
                         {% if restaurant.logo %}
                         <img src="{{ restaurant.logo.url }}" alt="{{ restaurant.name }}">
@@ -205,7 +205,7 @@
 
             restaurants.forEach(restaurant => {
                 html += `
-                    <div onclick="openRestaurantModal(${restaurant.id}); closeClusterPanel();" style="display: flex; gap: 16px; padding: 16px; border-radius: 12px; cursor: pointer; transition: background 0.2s; margin-bottom: 12px; border: 1px solid #e0e0e0;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
+                    <div onclick="highlightRestaurant(${restaurant.id}); openRestaurantModal(${restaurant.id}); closeClusterPanel();" style="display: flex; gap: 16px; padding: 16px; border-radius: 12px; cursor: pointer; transition: background 0.2s; margin-bottom: 12px; border: 1px solid #e0e0e0;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
                         ${restaurant.logo ? 
                             `<img src="${restaurant.logo}" alt="${restaurant.name}" style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover;">` :
                             `<div style="width: 60px; height: 60px; min-width: 60px; border-radius: 8px; background: #f5f5f5; display: flex; align-items: center; justify-content: center;">
@@ -243,7 +243,47 @@
             if (event.target.closest('.favorite-btn')) {
                 return; // Não abrir o modal
             }
+            
+            // Destacar o restaurante clicado
+            highlightRestaurant(restaurantId);
+            
             openRestaurantModal(restaurantId);
+        }
+        
+        function highlightRestaurant(restaurantId) {
+            // Remove destaque de todos os itens
+            document.querySelectorAll('.restaurant-item').forEach(item => {
+                item.classList.remove('selected', 'pulse');
+            });
+            
+            // Adiciona destaque ao item clicado
+            const selectedItem = document.querySelector(`.restaurant-item[data-restaurant-id="${restaurantId}"]`);
+            if (selectedItem) {
+                selectedItem.classList.add('selected');
+                
+                // Rola a sidebar para mostrar o item selecionado
+                selectedItem.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'nearest',
+                    inline: 'nearest'
+                });
+                
+                // Adiciona efeito de pulso após um pequeno delay
+                setTimeout(() => {
+                    selectedItem.classList.add('pulse');
+                    // Remove a classe pulse após a animação
+                    setTimeout(() => {
+                        selectedItem.classList.remove('pulse');
+                    }, 600);
+                }, 100);
+            }
+        }
+        
+        // Função auxiliar para remover todos os destaques
+        function clearHighlights() {
+            document.querySelectorAll('.restaurant-item').forEach(item => {
+                item.classList.remove('selected', 'pulse');
+            });
         }
 
         function openRestaurantModal(restaurantId) {
@@ -435,6 +475,11 @@
             const modal = document.getElementById('restaurantModal');
             modal.classList.remove('active');
             document.body.style.overflow = '';
+            
+            // Remove destaque de todos os restaurantes ao fechar o modal
+            document.querySelectorAll('.restaurant-item').forEach(item => {
+                item.classList.remove('selected');
+            });
         }
 
         // Event listener para fechar com ESC

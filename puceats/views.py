@@ -130,7 +130,7 @@ def login(request):
             messages.error(request, 'Credenciais inválidas. Verifique seu email/usuário e senha e tente novamente.')
     
     return render(request, 'login.html')
-#tesada beranro 
+
 @ensure_csrf_cookie
 def cadastro(request):
     if request.method == 'POST':
@@ -368,28 +368,74 @@ def add_restaurant(request):
         nome_restaurante = request.POST.get('nome_restaurante', '').strip()
         establishment_type = request.POST.get('establishment_type', '').strip()
         
-        if not token_code or not nome_restaurante or not establishment_type:
-            messages.error(request, 'Por favor, preencha todos os campos (token, nome do restaurante e tipo de estabelecimento).')
+        if not token_code:
+            messages.error(request, 'O token de autorização é obrigatório. Por favor, insira um token válido para continuar.')
+            return redirect('puceats:crud')
+        
+        if not nome_restaurante:
+            messages.error(request, 'O nome do restaurante é obrigatório. Por favor, preencha este campo.')
+            return redirect('puceats:crud')
+        
+        if not establishment_type:
+            messages.error(request, 'O tipo de estabelecimento é obrigatório. Por favor, selecione uma opção.')
             return redirect('puceats:crud')
         
         try:
             # Valida o token
             token = Token.objects.get(code=token_code.upper())
             
-            if not token.is_valid():
-                messages.error(request, 'Token inválido ou expirado. Solicite um novo token ao administrador.')
+            # Verifica se o token é válido
+            is_valid, message = token.is_valid()
+            if not is_valid:
+                if 'expirado' in message.lower():
+                    messages.error(request, f'Token expirado. Este token expirou em {token.expires_at.strftime("%d/%m/%Y às %H:%M")}. Solicite um novo token ao administrador para continuar.')
+                else:
+                    messages.error(request, f'Token inválido. {message}. Entre em contato com o administrador para obter um token válido.')
                 return redirect('puceats:crud')
             
             if token.is_used:
-                messages.error(request, 'Este token já foi utilizado. Cada token pode ser usado apenas uma vez. Solicite um novo token.')
+                used_info = f' por {token.used_by.username}' if token.used_by else ''
+                used_date = f' em {token.used_at.strftime("%d/%m/%Y às %H:%M")}' if token.used_at else ''
+                messages.error(request, f'Token já utilizado. Este token foi usado{used_info}{used_date}. Cada token pode ser usado apenas uma vez. Solicite um novo token ao administrador.')
                 return redirect('puceats:crud')
             
+            # Preparar dados do restaurante
+            restaurant_data = {
+                'owner': request.user,
+                'name': nome_restaurante,
+                'establishment_type': establishment_type,
+                'description': request.POST.get('description', '').strip(),
+                'cuisine_type': request.POST.get('cuisine_type', 'outros'),
+                'building': request.POST.get('building', '').strip(),
+                'opening_hours': request.POST.get('opening_hours', '').strip(),
+                'phone': request.POST.get('phone', '').strip(),
+                'instagram': request.POST.get('instagram', '').strip(),
+                'website': request.POST.get('website', '').strip(),
+                'price_level': int(request.POST.get('price_level', 3)),
+            }
+            
+            # Campos opcionais numéricos (coordenadas)
+            latitude = request.POST.get('latitude', '').strip()
+            if latitude:
+                try:
+                    restaurant_data['latitude'] = float(latitude)
+                except ValueError:
+                    pass
+            
+            longitude = request.POST.get('longitude', '').strip()
+            if longitude:
+                try:
+                    restaurant_data['longitude'] = float(longitude)
+                except ValueError:
+                    pass
+            
             # Cria o restaurante
-            restaurante = Restaurant.objects.create(
-                owner=request.user,
-                name=nome_restaurante,
-                establishment_type=establishment_type
-            )
+            restaurante = Restaurant.objects.create(**restaurant_data)
+            
+            # Upload de logo (se fornecido)
+            if 'logo' in request.FILES:
+                restaurante.logo = request.FILES['logo']
+                restaurante.save()
             
             # Marca o token como usado
             token.is_used = True
@@ -397,14 +443,26 @@ def add_restaurant(request):
             token.used_at = timezone.now()
             token.save()
             
-            messages.success(request, f'Parabéns! Restaurante "{nome_restaurante}" criado com sucesso! Você já pode começar a adicionar pratos ao cardápio.')
+            messages.success(request, f'Restaurante "{nome_restaurante}" criado com sucesso. Você já pode começar a adicionar pratos ao cardápio.')
             return redirect(f'/puceats/crud/?restaurant_id={restaurante.id}')
             
         except Token.DoesNotExist:
-            messages.error(request, 'Token não encontrado. Verifique se digitou corretamente.')
+            messages.error(request, f'Token não encontrado no sistema. O código "{token_code}" não existe ou foi digitado incorretamente. Verifique o código e tente novamente.')
+            return redirect('puceats:crud')
+        except Restaurant.DoesNotExist:
+            messages.error(request, 'Erro ao localizar o restaurante. Tente novamente.')
+            return redirect('puceats:crud')
+        except ValueError as e:
+            messages.error(request, f'Dados inválidos fornecidos. Verifique os valores numéricos como coordenadas e nível de preço. Detalhes: {str(e)}')
             return redirect('puceats:crud')
         except Exception as e:
-            messages.error(request, f'Ops! Ocorreu um erro ao criar o restaurante: {str(e)}. Tente novamente ou entre em contato com o suporte.')
+            error_msg = str(e)
+            if 'duplicate' in error_msg.lower() or 'unique' in error_msg.lower():
+                messages.error(request, f'Já existe um restaurante com o nome "{nome_restaurante}". Por favor, escolha um nome diferente.')
+            elif 'database' in error_msg.lower():
+                messages.error(request, 'Erro de conexão com o banco de dados. Tente novamente em alguns instantes.')
+            else:
+                messages.error(request, f'Não foi possível criar o restaurante devido a um erro inesperado: {error_msg}. Entre em contato com o suporte se o problema persistir.')
             return redirect('puceats:crud')
     
     return redirect('puceats:crud')
@@ -418,11 +476,6 @@ def add_restaurant(request):
         'restaurants': restaurants
     })
 
-def crud_restaurantes(request):
-    restaurants = Restaurant.objects.all().order_by('name')
-    return render(request, 'crud_restaurantes.html', {
-        'restaurants': restaurants
-    })
 
 def exemplo_consumir_api(request):
     try:
@@ -439,7 +492,6 @@ def admin_panel(request):
         messages.error(request, '❌ Acesso negado. Apenas administradores podem acessar esta área.')
         return redirect('puceats:index')
     
-    # Estatísticas gerais
     total_users = User.objects.count()
     total_restaurants = Restaurant.objects.count()
     total_dishes = Dish.objects.count()
@@ -447,7 +499,6 @@ def admin_panel(request):
     tokens_used = Token.objects.filter(is_used=True).count()
     tokens_available = total_tokens - tokens_used
     
-    # Dados detalhados
     users = User.objects.all().order_by('-date_joined')
     restaurants = Restaurant.objects.all().select_related('owner').prefetch_related('dishes').order_by('-id')
     
@@ -590,46 +641,6 @@ def dish_delete(request, dish_id):
         return JsonResponse({'success': False, 'error': str(e)})
 
 # === CRUD de Restaurantes ===
-@require_http_methods(["POST"])
-def restaurant_add(request):
-    """Adicionar novo restaurante"""
-    try:
-        name = request.POST.get('name')
-        if not name:
-            return JsonResponse({'success': False, 'error': 'Nome é obrigatório'})
-        
-        # Preparar dados
-        data = {
-            'name': name,
-            'description': request.POST.get('description', ''),
-            'cuisine_type': request.POST.get('cuisine_type', 'outros'),
-            'building': request.POST.get('building', ''),
-            'price_level': int(request.POST.get('price_level', 3)),
-            'phone': request.POST.get('phone', ''),
-            'opening_hours': request.POST.get('opening_hours', ''),
-            'instagram': request.POST.get('instagram', ''),
-            'website': request.POST.get('website', '')
-        }
-        
-        # Campos opcionais numéricos
-        latitude = request.POST.get('latitude')
-        if latitude:
-            data['latitude'] = float(latitude)
-        
-        longitude = request.POST.get('longitude')
-        if longitude:
-            data['longitude'] = float(longitude)
-        
-        restaurant = Restaurant.objects.create(**data)
-        
-        # Upload de logo
-        if 'logo' in request.FILES:
-            restaurant.logo = request.FILES['logo']
-            restaurant.save()
-        
-        return JsonResponse({'success': True})
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)})
 
 @require_http_methods(["POST"])
 def restaurant_edit(request, restaurant_id):
