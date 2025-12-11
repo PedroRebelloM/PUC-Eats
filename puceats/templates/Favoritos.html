@@ -67,7 +67,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const card = e.target.closest('.favorite-card');
         if (card) {
-            window.location.href = '{% url "puceats:index" %}';
+            const restaurantId = card.dataset.restaurantId;
+            window.location.href = `{% url "puceats:index" %}?open=${restaurantId}`;
         }
     });
     
@@ -79,14 +80,28 @@ function renderFavorites(favoriteIds) {
     const grid = document.getElementById('favoritesGrid');
     grid.innerHTML = '<div style="text-align: center; padding: 40px;"><p>Carregando restaurantes...</p></div>';
     
+    console.log('Carregando favoritos:', favoriteIds);
+    
     const promises = favoriteIds.map(id => 
         fetch(`/puceats/api/restaurante/${id}/menu/`)
-            .then(r => r.json())
-            .catch(() => null)
+            .then(r => {
+                console.log(`Resposta da API para ID ${id}:`, r.status);
+                return r.json();
+            })
+            .then(data => {
+                console.log(`Dados recebidos para ID ${id}:`, data);
+                return data;
+            })
+            .catch(err => {
+                console.error(`Erro ao carregar restaurante ${id}:`, err);
+                return null;
+            })
     );
     
     Promise.all(promises).then(restaurants => {
+        console.log('Todos os restaurantes:', restaurants);
         const validRestaurants = restaurants.filter(r => r && r.success !== false);
+        console.log('Restaurantes válidos:', validRestaurants);
         
         if (validRestaurants.length === 0) {
             grid.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">Nenhum restaurante encontrado</p>';

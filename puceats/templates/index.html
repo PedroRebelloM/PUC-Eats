@@ -742,5 +742,17 @@
             });
         }
 
+        // Abrir modal automaticamente se houver parâmetro 'open' na URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const openRestaurantId = urlParams.get('open');
+        if (openRestaurantId) {
+            setTimeout(() => {
+                openRestaurantModal(parseInt(openRestaurantId));
+                // Limpar parâmetro da URL
+                const cleanUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, cleanUrl);
+            }, 300);
+        }
+
 </script>
 {% endblock %}

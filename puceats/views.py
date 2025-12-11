@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
+from django.views.decorators.http import require_http_methods
 from .models import Token, Restaurant, Dish, Category
 import requests
 
@@ -43,6 +44,7 @@ def get_restaurant_menu(request, restaurant_id):
         
         return JsonResponse({
             'success': True,
+            'id': restaurant.id,
             'name': restaurant.name,
             'logo': restaurant.logo.url if restaurant.logo else None,
             'establishment_type': restaurant.get_establishment_type_display(),
@@ -90,16 +92,6 @@ def barracas_view(request):
         'icon': 'storefront',
     }
     return render(request, 'estabelecimentos.html', context)
-from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
-from .models import Restaurant, Dish, Category
-import requests
-
-def index(request):
-    restaurants = Restaurant.objects.all()
-    return render(request, 'index.html', {"restaurants": restaurants})
-
 @ensure_csrf_cookie
 def login(request):
     if request.method == 'POST':

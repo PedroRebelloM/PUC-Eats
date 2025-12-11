@@ -28,7 +28,7 @@
 
         <section class="establishments-grid">
             {% for restaurant in restaurants %}
-            <article class="establishment-card">
+            <article class="establishment-card" onclick="window.location.href='{% url 'puceats:index' %}?open={{ restaurant.id }}'" style="cursor: pointer;">
                 <div class="card-image">
                     <div class="image-placeholder">
                         <span class="material-icons placeholder-icon">{{ icon }}</span>

@@ -8,7 +8,14 @@ const FavoritesManager = {
     getFavorites() {
         try {
             const favorites = localStorage.getItem(this.STORAGE_KEY);
-            return favorites ? JSON.parse(favorites) : [];
+            const parsed = favorites ? JSON.parse(favorites) : [];
+            // Remover duplicatas e garantir que são números
+            const unique = [...new Set(parsed.map(id => parseInt(id)))].filter(id => !isNaN(id));
+            // Se mudou, salvar a versão limpa
+            if (unique.length !== parsed.length || JSON.stringify(unique) !== JSON.stringify(parsed)) {
+                this.saveFavorites(unique);
+            }
+            return unique;
         } catch (error) {
             console.error('Erro ao ler favoritos:', error);
             return [];
