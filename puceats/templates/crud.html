@@ -45,6 +45,26 @@
                     max-height: 90vh !important;
                 }
             }
+            
+            /* Estilos para os botões de escolha de imagem */
+            .btn-check:checked + .btn-outline-success {
+                background-color: #9CCC65 !important;
+                border-color: #9CCC65 !important;
+                color: white !important;
+                font-weight: 600;
+            }
+            
+            .btn-outline-success {
+                color: #558b2f;
+                border-color: #9CCC65;
+                transition: all 0.2s ease;
+            }
+            
+            .btn-outline-success:hover {
+                background-color: #f1f8e9;
+                border-color: #9CCC65;
+                color: #558b2f;
+            }
         </style>
     </head>
     <body class="bg-light">
@@ -221,14 +241,14 @@
                         <span class="material-icons">close</span>
                     </button>
                 </div>
-                <form id="dishForm" method="post" enctype="multipart/form-data">
+                <form id="dishForm" method="post" action="{% url 'puceats:dish-add' %}" enctype="multipart/form-data" novalidate>
                     {% csrf_token %}
                     <input type="hidden" id="dishId" name="dish_id">
                     <div class="row g-3">
                         <div class="col-12">
                             <label for="campoRestaurante" class="form-label">Restaurante *</label>
-                            <select class="form-select" id="campoRestaurante" name="restaurant" required>
-                                <option value="" selected disabled>Selecione o restaurante…</option>
+                            <select class="form-select" id="campoRestaurante" name="restaurant">
+                                <option value="">Selecione o restaurante…</option>
                                 {% for restaurant in restaurants %}
                                 <option value="{{ restaurant.id }}" {% if selected_restaurant and selected_restaurant.id == restaurant.id %}selected{% endif %}>{{ restaurant.name }}</option>
                                 {% endfor %}
@@ -236,7 +256,7 @@
                         </div>
                         <div class="col-12">
                             <label for="campoNome" class="form-label">Nome do prato *</label>
-                            <input type="text" class="form-control" id="campoNome" name="name" placeholder="Ex.: Obelix" required />
+                            <input type="text" class="form-control" id="campoNome" name="name" placeholder="Ex.: Obelix" />
                         </div>
                         <div class="col-12">
                             <label for="campoDescricao" class="form-label">Descrição</label>
@@ -255,18 +275,18 @@
                             <label for="campoPreco" class="form-label">Preço *</label>
                             <div class="input-group">
                                 <span class="input-group-text">R$</span>
-                                <input type="number" class="form-control" id="campoPreco" name="price" min="0" step="0.01" placeholder="0,00" required />
+                                <input type="number" class="form-control" id="campoPreco" name="price" min="0" step="0.01" placeholder="0,00" />
                             </div>
                         </div>
                         <div class="col-12">
                             <label class="form-label d-block">Imagem (Opcional)</label>
-                            <div class="btn-group" role="group" aria-label="Escolha de imagem">
+                            <div class="btn-group w-100" role="group" aria-label="Escolha de imagem">
                                 <input type="radio" class="btn-check" name="tipoImagem" id="tipoImagemNenhuma" value="nenhuma" checked data-image-choice>
-                                <label class="btn btn-outline-secondary" for="tipoImagemNenhuma">Nenhuma</label>
+                                <label class="btn btn-outline-success" for="tipoImagemNenhuma" style="flex: 1;">Nenhuma</label>
                                 <input type="radio" class="btn-check" name="tipoImagem" id="tipoImagemUrl" value="url" data-image-choice>
-                                <label class="btn btn-outline-secondary" for="tipoImagemUrl">URL</label>
+                                <label class="btn btn-outline-success" for="tipoImagemUrl" style="flex: 1;">URL</label>
                                 <input type="radio" class="btn-check" name="tipoImagem" id="tipoImagemUpload" value="upload" data-image-choice>
-                                <label class="btn btn-outline-secondary" for="tipoImagemUpload">Upload</label>
+                                <label class="btn btn-outline-success" for="tipoImagemUpload" style="flex: 1;">Upload</label>
                             </div>
                         </div>
                         <div class="col-12 d-none" id="grupoImagemUrl">
@@ -506,6 +526,9 @@
         
         <script src="{% static 'js/app.js' %}"></script>
         <script>
+            // Aguardar DOM estar pronto antes de executar o código
+            document.addEventListener('DOMContentLoaded', function() {
+            
             // Dados dos pratos em JSON para edição
             const dishesData = {
                 {% for dish in dishes %}
@@ -523,8 +546,8 @@
                 {% endfor %}
             };
 
-            // Função para deletar prato
-            function deleteDish(dishId, dishName) {
+            // Função para deletar prato (exposta globalmente)
+            window.deleteDish = function(dishId, dishName) {
                 if (!confirm(`Tem certeza que deseja deletar "${dishName}"?`)) {
                     return;
                 }
@@ -546,8 +569,15 @@
                         
                         // Verificar se não há mais pratos
                         if (document.querySelectorAll('.dish-item').length === 0) {
-                            document.getElementById('dishesContainer').innerHTML = 
-                                '<div class="col-12"><div class="alert alert-info"><span class="material-icons" style="vertical-align: middle;">info</span> Nenhum prato cadastrado ainda.</div></div>';
+                            const container = document.getElementById('dishesContainer');
+                            container.className = '';
+                            container.style.cssText = 'display: flex; justify-content: center; align-items: center; min-height: 400px; width: 100%;';
+                            container.innerHTML = 
+                                '<div style="text-align: center; max-width: 500px;">' +
+                                '<span class="material-icons text-muted mb-3" style="font-size: 64px; display: block;">restaurant_menu</span>' +
+                                '<p class="text-muted mb-2" style="font-size: 1.1rem;">Nenhum prato cadastrado neste restaurante ainda.</p>' +
+                                '<p class="text-muted small mb-0">Clique no botão "Adicionar" para criar o primeiro prato!</p>' +
+                                '</div>';
                         }
                         alert('Prato deletado com sucesso!');
                     } else {
@@ -560,11 +590,19 @@
                 });
             }
 
-            // Função para editar prato
-            function editDish(dishId) {
+            // Função para editar prato (exposta globalmente)
+            window.editDish = function(dishId) {
                 const dish = dishesData[dishId];
                 if (!dish) return;
 
+                const form = document.getElementById('dishForm');
+                
+                // Mudar o action do form para a URL de edição
+                form.action = `/puceats/crud/dish/${dishId}/edit/`;
+                
+                // Setar o atributo data-dish-id que o app.js usa
+                form.setAttribute('data-dish-id', dishId);
+                
                 // Preencher o formulário
                 document.getElementById('dishId').value = dish.id;
                 document.getElementById('campoNome').value = dish.name;
@@ -573,6 +611,8 @@
                 document.getElementById('campoRestaurante').value = dish.restaurant;
                 if (dish.category) {
                     document.getElementById('campoCategoria').value = dish.category;
+                } else {
+                    document.getElementById('campoCategoria').value = '';
                 }
                 document.getElementById('campoVegano').checked = dish.is_vegan;
                 document.getElementById('campoVegetariano').checked = dish.is_vegetarian;
@@ -588,49 +628,57 @@
                 document.body.classList.add('modalOpen');
             }
 
-            // Submit do formulário
-            document.getElementById('dishForm').addEventListener('submit', function(e) {
-                e.preventDefault();
+            // Gerenciar visibilidade dos campos de imagem
+            const imageChoiceInputs = document.querySelectorAll('[data-image-choice]');
+            const grupoUrl = document.getElementById('grupoImagemUrl');
+            const grupoUpload = document.getElementById('grupoImagemUpload');
+            const campoUrl = document.getElementById('campoImagemUrl');
+            const campoUpload = document.getElementById('campoImagem');
+            
+            function updateImageFields() {
+                const selectedChoice = document.querySelector('[data-image-choice]:checked');
+                if (!selectedChoice) return;
                 
-                const formData = new FormData(this);
-                const dishId = document.getElementById('dishId').value;
+                const value = selectedChoice.value;
                 
-                let url = dishId ? 
-                    `/puceats/crud/dish/${dishId}/edit/` : 
-                    '/puceats/crud/dish/add/';
-
-                fetch(url, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRFToken': getCookie('csrftoken')
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Fechar modal usando a estrutura do app.js
-                        const modal = document.getElementById('adicionarModal');
-                        modal.classList.remove('isOpen');
-                        modal.setAttribute('aria-hidden', 'true');
-                        document.body.classList.remove('modalOpen');
-                        
-                        alert(dishId ? 'Prato atualizado com sucesso!' : 'Prato adicionado com sucesso!');
-                        window.location.reload();
-                    } else {
-                        alert('Erro: ' + (data.error || 'Erro desconhecido'));
-                    }
-                })
-                .catch(error => {
-                    console.error('Erro:', error);
-                    alert('Erro ao salvar o prato');
-                });
+                // Ocultar todos os campos
+                grupoUrl.classList.add('d-none');
+                grupoUpload.classList.add('d-none');
+                
+                // Mostrar o campo selecionado
+                if (value === 'url') {
+                    grupoUrl.classList.remove('d-none');
+                    campoUrl.removeAttribute('disabled');
+                    if (campoUpload) campoUpload.value = '';
+                } else if (value === 'upload') {
+                    grupoUpload.classList.remove('d-none');
+                    campoUpload.removeAttribute('disabled');
+                    if (campoUrl) campoUrl.value = '';
+                } else {
+                    // Nenhuma - limpar ambos
+                    if (campoUrl) campoUrl.value = '';
+                    if (campoUpload) campoUpload.value = '';
+                }
+            }
+            
+            // Adicionar listeners aos radio buttons
+            imageChoiceInputs.forEach(input => {
+                input.addEventListener('change', updateImageFields);
             });
+            
+            // Inicializar
+            updateImageFields();
 
             // Limpar formulário ao abrir modal para adicionar
             document.getElementById('abrirModalAdicionar').addEventListener('click', function(e) {
                 e.preventDefault();
-                document.getElementById('dishForm').reset();
+                
+                const form = document.getElementById('dishForm');
+                
+                // Resetar o form para modo adicionar
+                form.reset();
+                form.action = '{% url "puceats:dish-add" %}';
+                form.removeAttribute('data-dish-id');
                 document.getElementById('dishId').value = '';
                 document.getElementById('tituloAdicionarItem').textContent = 'Adicionar Novo Item';
                 
@@ -683,6 +731,8 @@
                 }
                 return cookieValue;
             }
+            
+            }); // Fim do DOMContentLoaded
         </script>
     </body>
 </html>

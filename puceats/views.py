@@ -529,23 +529,50 @@ def restaurant_detail(request, slug):
 def dish_add(request):
     """Adicionar novo prato"""
     try:
-        restaurant_id = request.POST.get('restaurant')
-        category_id = request.POST.get('category')
-        name = request.POST.get('name')
-        description = request.POST.get('description', '')
-        price = request.POST.get('price')
+        # Debug: Logar todos os dados recebidos
+        print("=== DADOS RECEBIDOS NO SERVIDOR ===")
+        print("POST data:", dict(request.POST))
+        print("FILES:", dict(request.FILES))
+        print("====================================")
         
-        if not all([restaurant_id, name, price]):
-            return JsonResponse({'success': False, 'error': 'Campos obrigatórios faltando'})
+        restaurant_id = request.POST.get('restaurant', '').strip()
+        category_id = request.POST.get('category', '').strip()
+        name = request.POST.get('name', '').strip()
+        description = request.POST.get('description', '').strip()
+        price = request.POST.get('price', '').strip()
         
-        restaurant = get_object_or_404(Restaurant, id=restaurant_id)
+        print(f"restaurant_id: '{restaurant_id}'")
+        print(f"name: '{name}'")
+        print(f"price: '{price}'")
+        
+        # Validações específicas
+        if not restaurant_id:
+            return JsonResponse({'success': False, 'error': 'Restaurante é obrigatório'})
+        
+        if not name:
+            return JsonResponse({'success': False, 'error': 'Nome do prato é obrigatório'})
+        
+        if not price:
+            return JsonResponse({'success': False, 'error': 'Preço é obrigatório'})
+        
+        try:
+            restaurant = Restaurant.objects.get(id=int(restaurant_id))
+        except (Restaurant.DoesNotExist, ValueError):
+            return JsonResponse({'success': False, 'error': 'Restaurante inválido'})
+        
+        try:
+            price_float = float(price.replace(',', '.'))
+            if price_float < 0:
+                return JsonResponse({'success': False, 'error': 'Preço não pode ser negativo'})
+        except (ValueError, AttributeError):
+            return JsonResponse({'success': False, 'error': 'Preço inválido'})
         
         dish = Dish.objects.create(
             restaurant=restaurant,
-            category_id=category_id if category_id else None,
+            category_id=int(category_id) if category_id else None,
             name=name,
             description=description,
-            price=price,
+            price=price_float,
             is_vegan=request.POST.get('is_vegan') == 'on',
             is_vegetarian=request.POST.get('is_vegetarian') == 'on',
             is_gluten_free=request.POST.get('is_gluten_free') == 'on',
@@ -555,9 +582,9 @@ def dish_add(request):
             dish.image = request.FILES['image']
             dish.save()
         
-        return JsonResponse({'success': True})
+        return JsonResponse({'success': True, 'message': 'Prato adicionado com sucesso'})
     except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)})
+        return JsonResponse({'success': False, 'error': f'Erro ao salvar: {str(e)}'})
 
 @require_http_methods(["POST"])
 def dish_edit(request, dish_id):
